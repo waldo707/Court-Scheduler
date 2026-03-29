@@ -70,6 +70,7 @@ let sitoutStreak = {};
 let partnerCount = {};
 let lastPartner = {};
 
+let roundNumber = 0;
 let currentRound = null;
 let nextRoundData = null;
 
@@ -82,6 +83,11 @@ function key(a, b) {
 function hasUnplayedPartner(player) {
   return Object.values(partnerCount[player]).some(count => count === 0);
 }
+
+function partnerShieldRounds() {
+  return Math.floor((players.length * (players.length - 1)) / 8);
+}
+
 
 /* ===================== ROUND GENERATION ===================== */
 /*
@@ -160,6 +166,21 @@ function generateRound() {
         (hasUnplayedPartner(b1) || hasUnplayedPartner(b2))
       ) score += 1000;
 
+if (
+    roundNumber < partnerShieldRounds() &&
+    partnerCount[a1][a2] > 0
+  ) {
+    score += 10000;
+  }
+
+  if (
+    roundNumber < partnerShieldRounds() &&
+    partnerCount[b1][b2] > 0
+  ) {
+    score += 10000;
+  }
+
+
       if (lastPartner[a1] === a2 || lastPartner[a2] === a1) score += 500;
       if (lastPartner[b1] === b2 || lastPartner[b2] === b1) score += 500;
 
@@ -212,6 +233,8 @@ function start() {
   partnerCount = {};
   lastPartner = {};
 
+  roundNumber = 0;
+
   players.forEach(p => {
     playCount[p] = 0;
     sitoutStreak[p] = 0;
@@ -229,6 +252,7 @@ function start() {
 }
 
 function nextRound() {
+  roundNumber++;
   currentRound = nextRoundData;
   nextRoundData = generateRound();
   render();
