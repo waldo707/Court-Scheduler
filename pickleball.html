@@ -2,28 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pickleball Scheduler (TEST)</title>
+  <title>Pickleball Scheduler</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     body {
       font-family: system-ui, Arial, sans-serif;
       padding: 20px;
-      background: #f5f5f5;
+      background: #f4f4f4;
     }
-    button {
+    h1, h2 {
+      text-align: center;
+    }
+    input, button {
       font-size: 18px;
       padding: 10px;
-      margin-top: 10px;
       width: 100%;
-    }
-    .card {
-      background: #fff;
-      padding: 12px;
       margin-top: 10px;
+    }
+    button {
+      background: #007acc;
+      border: none;
+      color: white;
       border-radius: 8px;
     }
-    h2 {
-      margin-top: 20px;
+    .card {
+      background: white;
+      padding: 14px;
+      margin-top: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    hr {
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -33,29 +44,94 @@
 <h1>Pickleball Scheduler</h1>
 
 <label>Player names (comma separated)</label>
-<input id="playersInput" style="width:100%; font-size:16px;">
-<br><br>
+<input id="playersInput" placeholder="Alex, Sam, Jordan, Riley">
 
-<label>Courts</label>
-<input type="number" id="courtsInput" value="1" min="1" style="width:100%; font-size:16px;">
+<label>Number of courts</label>
+<input id="courtsInput" type="number" min="1" value="1">
 
 <button onclick="start()">Generate First Round</button>
 
 <div id="output"></div>
 
-<!-- ✅ SCRIPT MUST BE PLAIN -->
+<button onclick="nextRound()">Next Round</button>
+
 <script>
+/* ===================== STATE ===================== */
 
-alert("SCRIPT LOADED");
-
-// GLOBAL STATE
 let players = [];
 let courts = 1;
+let playCount = {};
+let usedPartners = new Set();
 
-// BUTTON HANDLER
+let currentRound = null;
+let nextRoundData = null;
+
+/* ===================== HELPERS ===================== */
+
+function key(a, b) {
+  return [a, b].sort().join("|");
+}
+
+/* ===================== ROUND GENERATION ===================== */
+
+function generateRound() {
+
+  // Defensive init (Safari safety)
+  players.forEach(p => {
+    if (playCount[p] === undefined) playCount[p] = 0;
+  });
+
+  let grouped = {};
+  players.forEach(p => {
+    let count = playCount[p];
+    if (!grouped[count]) grouped[count] = [];
+    grouped[count].push(p);
+  });
+
+  let available = [];
+  Object.keys(grouped)
+    .sort((a, b) => a - b)
+    .forEach(k => {
+      available.push(...grouped[k].sort(() => Math.random() - 0.5));
+    });
+
+  let matches = [];
+
+  for (let i = 1; i <= courts; i++) {
+    if (available.length < 4) break;
+
+    let group = available.splice(0, 4);
+
+    let combos = [
+      [[group[0], group[1]], [group[2], group[3]]],
+      [[group[0], group[2]], [group[1], group[3]]],
+      [[group[0], group[3]], [group[1], group[2]]]
+    ].sort(() => Math.random() - 0.5);
+
+    let chosen = combos.find(c =>
+      !usedPartners.has(key(c[0][0], c[0][1])) &&
+      !usedPartners.has(key(c[1][0], c[1][1]))
+    ) || combos[0];
+
+    usedPartners.add(key(chosen[0][0], chosen[0][1]));
+    usedPartners.add(key(chosen[1][0], chosen[1][1]));
+
+    chosen[0].forEach(p => playCount[p]++);
+    chosen[1].forEach(p => playCount[p]++);
+
+    matches.push({
+      court: i,
+      teamA: chosen[0],
+      teamB: chosen[1]
+    });
+  }
+
+  return { matches, sitouts: available };
+}
+
+/* ===================== START / ADVANCE ===================== */
+
 function start() {
-  alert("START BUTTON CLICKED");
-
   players = document.getElementById("playersInput").value
     .split(",")
     .map(p => p.trim())
@@ -63,29 +139,56 @@ function start() {
 
   courts = parseInt(document.getElementById("courtsInput").value);
 
-  let html = "<h2>Current Round</h2>";
+  playCount = {};
+  usedPartners.clear();
+  players.forEach(p => playCount[p] = 0);
 
-  let index = 0;
+  currentRound = generateRound();
+  nextRoundData = generateRound();
 
-  for (let c = 1; c <= courts; c++) {
-    if (index + 3 >= players.length) break;
-
-    html += `
-      <div class="card">
-        <strong>Court ${c}</strong><br>
-        ${players[index]} & ${players[index+1]} <br>
-        vs<br>
-        ${players[index+2]} & ${players[index+3]}
-      </div>
-    `;
-    index += 4;
-  }
-
-  document.getElementById("output").innerHTML = html;
+  render();
 }
 
+function nextRound() {
+  currentRound = nextRoundData;
+  nextRoundData = generateRound();
+  render();
+}
+
+/* ===================== RENDER ===================== */
+
+function renderRound(title, round) {
+  let html = `<h2>${title}</h2>`;
+
+  round.matches.forEach(m => {
+    html += `
+      <div class="card">
+        <strong>Court ${m.court}</strong><br>
+        ${m.teamA[0]} & ${m.teamA[1]}
+        <hr>
+        ${m.teamB[0]} & ${m.teamB[1]}
+      </div>
+    `;
+  });
+
+  if (round.sitouts.length) {
+    html += `
+      <div class="card">
+        Sitting out:<br>${round.sitouts.join(", ")}
+      </div>
+    `;
+  }
+
+  return html;
+}
+
+function render() {
+  let html = "";
+  html += renderRound("Current Round", currentRound);
+  html += renderRound("Next Match (Preview)", nextRoundData);
+  document.getElementById("output").innerHTML = html;
+}
 </script>
 
 </body>
 </html>
-``
