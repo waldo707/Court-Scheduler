@@ -146,6 +146,10 @@ function key(a, b) {
 
 /* ===================== ROUND GENERATION ===================== */
 function generateRound() {
+players.forEach(p => {
+  if (sitoutStreak[p] === undefined) sitoutStreak[p] = 0;
+});
+``
   let grouped = {};
   players.forEach(p => {
     let count = playCount[p];
@@ -244,7 +248,7 @@ available.forEach(p => {
 
 /* ===================== START / ADVANCE ===================== */
 function start() {
-alert("start() ran
+alert("START BUTTON CLICKED");
 resetTimer();  
 players = document.getElementById("playersInput").value
     .split(",")
