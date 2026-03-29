@@ -248,35 +248,7 @@ available.forEach(p => {
 
 /* ===================== START / ADVANCE ===================== */
 function start() {
-alert("START BUTTON CLICKED");
-resetTimer();  
-players = document.getElementById("playersInput").value
-    .split(",")
-    .map(p => p.trim())
-    .filter(Boolean);
-
-  courts = parseInt(document.getElementById("courtsInput").value);
-
-  playCount = {};
-usedPartners.clear();
-sitoutStreak = {};
-
-players.forEach(p => {
-  playCount[p] = 0;
-  sitoutStreak[p] = 0;
-});
-
-  currentRound = generateRound();
-  nextRoundData = generateRound();
-
-  render();
-}
-
-function nextRound() {
- resetTimer(); 
- currentRound = nextRoundData;
-  nextRoundData = generateRound();
-  render();
+  alert("START BUTTON FIRED");
 }
 
 /* ===================== RENDERING ===================== */
