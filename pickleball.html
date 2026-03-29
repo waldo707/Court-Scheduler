@@ -14,17 +14,22 @@
     h1, h2 {
       text-align: center;
     }
+    label {
+      margin-top: 10px;
+      display: block;
+    }
     input, button {
       font-size: 18px;
       padding: 10px;
       width: 100%;
-      margin-top: 10px;
+      margin-top: 6px;
     }
     button {
       background: #007acc;
       border: none;
       color: white;
       border-radius: 8px;
+      margin-bottom: 12px;
     }
     .card {
       background: white;
@@ -50,10 +55,9 @@
 <input id="courtsInput" type="number" min="1" value="1">
 
 <button onclick="start()">Generate First Round</button>
+<button onclick="nextRound()">Next Round</button>
 
 <div id="output"></div>
-
-<button onclick="nextRound()">Next Round</button>
 
 <script>
 /* ===================== STATE ===================== */
@@ -61,12 +65,11 @@
 let players = [];
 let courts = 1;
 let playCount = {};
+let sitoutStreak = {};
 let usedPartners = new Set();
 
 let currentRound = null;
 let nextRoundData = null;
-let sitoutStreak = {};   // consecutive sit-outs per player
-
 
 /* ===================== HELPERS ===================== */
 
@@ -75,44 +78,41 @@ function key(a, b) {
 }
 
 /* ===================== ROUND GENERATION ===================== */
+/*
+  HARD‑CONSTRAINT ELIGIBILITY SCHEDULER
+  Phase 1: Who plays (fairness enforced)
+  Phase 2: How they are paired (minimize repeats)
+*/
 
 function generateRound() {
 
   const SLOTS = courts * 4;
   let matches = [];
 
-  // -------------------------------
-  // Defensive init
-  // -------------------------------
+  // Defensive initialization
   players.forEach(p => {
     if (playCount[p] === undefined) playCount[p] = 0;
     if (sitoutStreak[p] === undefined) sitoutStreak[p] = 0;
   });
 
-  // -------------------------------
-  // PHASE 1: HARD ELIGIBILITY
-  // -------------------------------
+  // ---------- Phase 1: Hard eligibility ----------
 
-  // Highest sit-out streak in pool
   let maxSit = Math.max(...players.map(p => sitoutStreak[p]));
 
-  // Players forced to play (cannot sit again)
+  // Players who MUST play (already sat too long)
   let forced = players.filter(p => sitoutStreak[p] === maxSit && maxSit >= 2);
 
-  // Remaining candidates (excluding forced)
+  // Remaining candidates
   let remaining = players.filter(p => !forced.includes(p));
 
-  // Sort remaining strictly by fairness
   remaining.sort((a, b) => {
     if (playCount[a] !== playCount[b]) {
-      return playCount[a] - playCount[b]; // least games first
+      return playCount[a] - playCount[b]; // fewer games first
     }
-    return Math.random() - 0.5; // tie-break only
+    return Math.random() - 0.5; // tie‑break only
   });
 
-  // Final selection of players who will play
   let playing = [...forced];
-
   for (let p of remaining) {
     if (playing.length >= SLOTS) break;
     playing.push(p);
@@ -120,24 +120,17 @@ function generateRound() {
 
   let sitting = players.filter(p => !playing.includes(p));
 
-  // Update sit-out streaks
+  // Update sit‑out streaks
   players.forEach(p => {
-    if (playing.includes(p)) {
-      sitoutStreak[p] = 0;
-    } else {
-      sitoutStreak[p]++;
-    }
+    if (playing.includes(p)) sitoutStreak[p] = 0;
+    else sitoutStreak[p]++;
   });
 
-  // -------------------------------
-  // PHASE 2: PARTNER PAIRING
-  // -------------------------------
+  // ---------- Phase 2: Partner pairing ----------
 
-  // Shuffle playing pool slightly for variety
   playing = [...playing].sort(() => Math.random() - 0.5);
 
   while (playing.length >= 4) {
-
     let group = playing.splice(0, 4);
 
     let combos = [
@@ -146,7 +139,6 @@ function generateRound() {
       [[group[0], group[3]], [group[1], group[2]]]
     ];
 
-    // Score combos by partner reuse
     function score(combo) {
       let a = key(combo[0][0], combo[0][1]);
       let b = key(combo[1][0], combo[1][1]);
@@ -155,7 +147,6 @@ function generateRound() {
     }
 
     combos.sort((c1, c2) => score(c1) - score(c2));
-
     let chosen = combos[0];
 
     usedPartners.add(key(chosen[0][0], chosen[0][1]));
@@ -177,7 +168,6 @@ function generateRound() {
   };
 }
 
-
 /* ===================== START / ADVANCE ===================== */
 
 function start() {
@@ -188,19 +178,17 @@ function start() {
 
   courts = parseInt(document.getElementById("courtsInput").value);
 
-playCount = {};
-usedPartners.clear();
-sitoutStreak = {};
+  playCount = {};
+  sitoutStreak = {};
+  usedPartners.clear();
 
-players.forEach(p => {
-  	playCount[p] = 0;
- 	 sitoutStreak[p] = 0;
-});
-
+  players.forEach(p => {
+    playCount[p] = 0;
+    sitoutStreak[p] = 0;
+  });
 
   currentRound = generateRound();
   nextRoundData = generateRound();
-
   render();
 }
 
@@ -213,37 +201,33 @@ function nextRound() {
 /* ===================== RENDER ===================== */
 
 function renderRound(title, round) {
-  let html = `<h2>${title}</h2>`;
+  let html = "<h2>" + title + "</h2>";
 
   round.matches.forEach(m => {
-    html += `
-      <div class="card">
-        <strong>Court ${m.court}</strong><br>
-        ${m.teamA[0]} & ${m.teamA[1]}
-        <hr>
-        ${m.teamB[0]} & ${m.teamB[1]}
-      </div>
-    `;
+    html +=
+      "<div class='card'>" +
+      "<strong>Court " + m.court + "</strong><hr>" +
+      m.teamA[0] + " & " + m.teamA[1] + "<br>vs<br>" +
+      m.teamB[0] + " & " + m.teamB[1] +
+      "</div>";
   });
 
-  if (round.sitouts.length) {
-    html += `
-      <div class="card">
-        Sitting out:<br>${round.sitouts.join(", ")}
-      </div>
-    `;
+  if (round.sitouts.length > 0) {
+    html +=
+      "<div class='card'>Sitting out:<br>" +
+      round.sitouts.join(", ") +
+      "</div>";
   }
 
   return html;
 }
 
 function render() {
-  let html = "";
-  html += renderRound("Current Round", currentRound);
-  html += renderRound("Next Match (Preview)", nextRoundData);
-  document.getElementById("output").innerHTML = html;
+  document.getElementById("output").innerHTML =
+    renderRound("Current Round", currentRound) +
+    renderRound("Next Round (Preview)", nextRoundData);
 }
-</script>
 
+</script>
 </body>
 </html>
