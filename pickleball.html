@@ -66,7 +66,7 @@ let players = [];
 let courts = 1;
 let playCount = {};
 let sitoutStreak = {};
-let usedPartners = new Set();
+let partnerCount = {};
 
 let currentRound = null;
 let nextRoundData = null;
@@ -76,6 +76,10 @@ let nextRoundData = null;
 function key(a, b) {
   return [a, b].sort().join("|");
 }
+function hasUnplayedPartner(player, partnerMap) {
+  return Object.values(partnerMap[player]).some(count => count === 0);
+}
+
 
 /* ===================== ROUND GENERATION ===================== */
 /*
@@ -126,47 +130,73 @@ function generateRound() {
     else sitoutStreak[p]++;
   });
 
-  // ---------- Phase 2: Partner pairing ----------
+ // ---------- Phase 2: Partner pairing with exhaustion ----------
 
-  playing = [...playing].sort(() => Math.random() - 0.5);
+// Small shuffle for visual variety (does NOT affect fairness)
+playing = [...playing].sort(() => Math.random() - 0.5);
 
-  while (playing.length >= 4) {
-    let group = playing.splice(0, 4);
+while (playing.length >= 4) {
 
-    let combos = [
-      [[group[0], group[1]], [group[2], group[3]]],
-      [[group[0], group[2]], [group[1], group[3]]],
-      [[group[0], group[3]], [group[1], group[2]]]
-    ];
+  let group = playing.splice(0, 4);
 
-    function score(combo) {
-      let a = key(combo[0][0], combo[0][1]);
-      let b = key(combo[1][0], combo[1][1]);
-      return (usedPartners.has(a) ? 1 : 0) +
-             (usedPartners.has(b) ? 1 : 0);
+  let combos = [
+    [[group[0], group[1]], [group[2], group[3]]],
+    [[group[0], group[2]], [group[1], group[3]]],
+    [[group[0], group[3]], [group[1], group[2]]]
+  ];
+
+  // Score a pairing: lower score is better
+  function scoreCombo(combo) {
+    let [a1, a2] = combo[0];
+    let [b1, b2] = combo[1];
+    let score = 0;
+
+    // Base penalty: how often these partners already occurred
+    score += partnerCount[a1][a2];
+    score += partnerCount[b1][b2];
+
+    // HARD exhaustion rule:
+    // forbid re-pairing if either player still has unplayed partners
+    if (
+      partnerCount[a1][a2] > 0 &&
+      (hasUnplayedPartner(a1, partnerCount) ||
+       hasUnplayedPartner(a2, partnerCount))
+    ) {
+      score += 1000;
     }
 
-    combos.sort((c1, c2) => score(c1) - score(c2));
-    let chosen = combos[0];
+    if (
+      partnerCount[b1][b2] > 0 &&
+      (hasUnplayedPartner(b1, partnerCount) ||
+       hasUnplayedPartner(b2, partnerCount))
+    ) {
+      score += 1000;
+    }
 
-    usedPartners.add(key(chosen[0][0], chosen[0][1]));
-    usedPartners.add(key(chosen[1][0], chosen[1][1]));
-
-    chosen[0].forEach(p => playCount[p]++);
-    chosen[1].forEach(p => playCount[p]++);
-
-    matches.push({
-      court: matches.length + 1,
-      teamA: chosen[0],
-      teamB: chosen[1]
-    });
+    return score;
   }
 
-  return {
-    matches,
-    sitouts: sitting
-  };
+  // Choose the lowest-penalty pairing
+  combos.sort((c1, c2) => scoreCombo(c1) - scoreCombo(c2));
+  let chosen = combos[0];
+
+  // Record partner usage symmetrically
+  partnerCount[chosen[0][0]][chosen[0][1]]++;
+  partnerCount[chosen[0][1]][chosen[0][0]]++;
+  partnerCount[chosen[1][0]][chosen[1][1]]++;
+  partnerCount[chosen[1][1]][chosen[1][0]]++;
+
+  // Increment play counts
+  chosen[0].forEach(p => playCount[p]++);
+  chosen[1].forEach(p => playCount[p]++);
+
+  matches.push({
+    court: matches.length + 1,
+    teamA: chosen[0],
+    teamB: chosen[1]
+  });
 }
+
 
 /* ===================== START / ADVANCE ===================== */
 
@@ -180,20 +210,22 @@ function start() {
 
   playCount = {};
   sitoutStreak = {};
-  usedPartners.clear();
+  partnerCount = {};
 
   players.forEach(p => {
     playCount[p] = 0;
     sitoutStreak[p] = 0;
+
+    // Step 3: initialize partner exhaustion matrix
+    partnerCount[p] = {};
+    players.forEach(other => {
+      if (p !== other) {
+        partnerCount[p][other] = 0;
+      }
+    });
   });
 
   currentRound = generateRound();
-  nextRoundData = generateRound();
-  render();
-}
-
-function nextRound() {
-  currentRound = nextRoundData;
   nextRoundData = generateRound();
   render();
 }
