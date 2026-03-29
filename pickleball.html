@@ -78,56 +78,73 @@ function key(a, b) {
 
 function generateRound() {
 
-  // Defensive init (Safari safety)
+  const PLAYERS_PER_ROUND = courts * 4;
+
+  // ---------- Phase 1: Fair Player Selection ----------
+
+  // Defensive initialization
   players.forEach(p => {
     if (playCount[p] === undefined) playCount[p] = 0;
+    if (sitoutStreak[p] === undefined) sitoutStreak[p] = 0;
   });
 
-  let grouped = {};
+  // Sort players by fairness priority
+  let sortedPlayers = [...players].sort((a, b) => {
+    if (sitoutStreak[b] !== sitoutStreak[a]) {
+      return sitoutStreak[b] - sitoutStreak[a];   // waited longest
+    }
+    if (playCount[a] !== playCount[b]) {
+      return playCount[a] - playCount[b];         // least played
+    }
+    return Math.random() - 0.5;                    // tie-break randomness
+  });
+
+  let playing = sortedPlayers.slice(0, PLAYERS_PER_ROUND);
+  let sitting = sortedPlayers.slice(PLAYERS_PER_ROUND);
+
+  // Update sit-out streaks
   players.forEach(p => {
-    let count = playCount[p];
-    if (!grouped[count]) grouped[count] = [];
-    grouped[count].push(p);
+    if (playing.includes(p)) {
+      sitoutStreak[p] = 0;
+    } else {
+      sitoutStreak[p]++;
+    }
   });
 
-  let available = [];
-  Object.keys(grouped)
-    .sort((a, b) => a - b)
-    .forEach(k => {
-      available.push(...grouped[k].sort(() => Math.random() - 0.5));
-    });
+  // ---------- Phase 2: Court Pairing ----------
 
   let matches = [];
+  let pool = [...playing];
+
+  // Shuffle pool to vary matchups
+  pool.sort(() => Math.random() - 0.5);
 
   for (let i = 1; i <= courts; i++) {
-    if (available.length < 4) break;
+    if (pool.length < 4) break;
 
-    let group = available.splice(0, 4);
+    let group = pool.splice(0, 4);
 
+    // All possible team combinations
     let combos = [
       [[group[0], group[1]], [group[2], group[3]]],
       [[group[0], group[2]], [group[1], group[3]]],
       [[group[0], group[3]], [group[1], group[2]]]
-    ].sort(() => Math.random() - 0.5);
+    ];
 
-    let chosen = combos.find(c =>
-      !usedPartners.has(key(c[0][0], c[0][1])) &&
-      !usedPartners.has(key(c[1][0], c[1][1]))
-    ) || combos[0];
+    // Prefer combos with unseen partners
+    let chosen =
+      combos.find(c =>
+        !usedPartners.has(key(c[0][0], c[0][1])) &&
+        !usedPartners.has(key(c[1][0], c[1][1]))
+      ) || combos[0];
 
+    // Record partners
     usedPartners.add(key(chosen[0][0], chosen[0][1]));
     usedPartners.add(key(chosen[1][0], chosen[1][1]));
 
-    chosen[0].forEach(p => {
-  playCount[p]++;
-  sitoutStreak[p] = 0;   // reset sit-out streak (player played)
-});
-
-chosen[1].forEach(p => {
-  playCount[p]++;
-  sitoutStreak[p] = 0;
-});
-
+    // Increment play counts
+    chosen[0].forEach(p => playCount[p]++);
+    chosen[1].forEach(p => playCount[p]++);
 
     matches.push({
       court: i,
@@ -135,6 +152,13 @@ chosen[1].forEach(p => {
       teamB: chosen[1]
     });
   }
+
+  return {
+    matches,
+    sitouts: sitting
+  };
+}
+
 
 // Enforce max 2 consecutive sit-outs (when possible)
 let forcedIn = available.filter(p => sitoutStreak[p] >= 2);
