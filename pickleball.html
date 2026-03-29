@@ -65,6 +65,8 @@ let usedPartners = new Set();
 
 let currentRound = null;
 let nextRoundData = null;
+let sitoutStreak = {};   // consecutive sit-outs per player
+
 
 /* ===================== HELPERS ===================== */
 
@@ -116,8 +118,16 @@ function generateRound() {
     usedPartners.add(key(chosen[0][0], chosen[0][1]));
     usedPartners.add(key(chosen[1][0], chosen[1][1]));
 
-    chosen[0].forEach(p => playCount[p]++);
-    chosen[1].forEach(p => playCount[p]++);
+    chosen[0].forEach(p => {
+  playCount[p]++;
+  sitoutStreak[p] = 0;   // reset sit-out streak (player played)
+});
+
+chosen[1].forEach(p => {
+  playCount[p]++;
+  sitoutStreak[p] = 0;
+});
+
 
     matches.push({
       court: i,
@@ -125,6 +135,45 @@ function generateRound() {
       teamB: chosen[1]
     });
   }
+
+// Enforce max 2 consecutive sit-outs (when possible)
+let forcedIn = available.filter(p => sitoutStreak[p] >= 2);
+
+forcedIn.forEach(fp => {
+  if (matches.length === 0) return;
+
+  let candidates = matches
+    .flatMap(m => [...m.teamA, ...m.teamB])
+    .filter(p => sitoutStreak[p] === 0);
+
+  if (candidates.length === 0) return;
+
+  let swapOut = candidates[0];
+
+  for (let m of matches) {
+    let idxA = m.teamA.indexOf(swapOut);
+    if (idxA !== -1) {
+      m.teamA[idxA] = fp;
+      break;
+    }
+    let idxB = m.teamB.indexOf(swapOut);
+    if (idxB !== -1) {
+      m.teamB[idxB] = fp;
+      break;
+    }
+  }
+
+  sitoutStreak[fp] = 0;
+  sitoutStreak[swapOut]++;
+
+  available = available.filter(p => p !== fp);
+  available.push(swapOut);
+});
+
+// Increment sit-out streaks for players who sat out
+available.forEach(p => {
+  sitoutStreak[p]++;
+});
 
   return { matches, sitouts: available };
 }
@@ -139,9 +188,15 @@ function start() {
 
   courts = parseInt(document.getElementById("courtsInput").value);
 
-  playCount = {};
-  usedPartners.clear();
-  players.forEach(p => playCount[p] = 0);
+playCount = {};
+usedPartners.clear();
+sitoutStreak = {};
+
+players.forEach(p => {
+  	playCount[p] = 0;
+ 	 sitoutStreak[p] = 0;
+});
+
 
   currentRound = generateRound();
   nextRoundData = generateRound();
