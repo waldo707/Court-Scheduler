@@ -57,6 +57,15 @@
 <button onclick="start()">Generate First Round</button>
 <button onclick="nextRound()">Next Round</button>
 
+<div class="card">
+  <div id="timerDisplay" style="font-size: 36px; font-weight: bold;">
+    08:00
+  </div>
+
+  <button onclick="startTimer()">Start Timer</button>
+  <button onclick="togglePause()">Pause</button>
+</div>
+
 <div id="output"></div>
 
 <script>
@@ -71,6 +80,12 @@ let partnerCount = {};
 let lastPartner = {};
 
 let roundNumber = 0;
+
+
+let timerSeconds = 8 * 60;   // 8 minutes
+let timerInterval = null;
+let timerRunning = false;
+
 let currentRound = null;
 let nextRoundData = null;
 
@@ -252,11 +267,80 @@ function start() {
 }
 
 function nextRound() {
+  resetTimer();  
   roundNumber++;
   currentRound = nextRoundData;
   nextRoundData = generateRound();
   render();
 }
+/* ===================== TIMER ===================== */
+
+function updateTimerDisplay() {
+  let minutes = Math.floor(timerSeconds / 60);
+  let seconds = timerSeconds % 60;
+  document.getElementById("timerDisplay").innerText =
+    String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+}
+
+
+function startTimer() {
+  if (timerRunning) return;
+
+  timerRunning = true;
+
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    updateTimerDisplay();
+
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerRunning = false;
+      playAlarm();
+    }
+  }, 1000);
+}
+
+
+function togglePause() {
+  if (!timerRunning && timerSeconds > 0) {
+    // Resume
+    startTimer();
+    return;
+  }
+
+  // Pause
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+}
+
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  timerSeconds = 8 * 60;
+  updateTimerDisplay();
+}
+
+function playAlarm() {
+  // simple beep (Safari-safe)
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(880, ctx.currentTime);
+  gain.gain.setValueAtTime(0.4, ctx.currentTime);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start();
+  osc.stop(ctx.currentTime + 1.5);
+}
+
 
 /* ===================== RENDER ===================== */
 
