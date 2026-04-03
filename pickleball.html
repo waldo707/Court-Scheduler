@@ -559,6 +559,16 @@ function balanceWeight() {
 }
 
 
+function playersPerCourt() {
+  return matchType === "singles" ? 2 : 4;
+}
+
+function renderTeam(team) {
+  return team.length === 1
+    ? team[0]
+    : `${team[0]} & ${team[1]}`;
+}
+
 function generateRound() {
   const MAX_SITOUT = 2;
   const slots = courts * 4;
