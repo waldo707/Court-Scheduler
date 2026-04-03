@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Court Scheduler</title>
+<title>Pickleball Scheduler</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -84,10 +84,6 @@ button {
 .court-label {
   font-size: 18px;
   font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
 }
 .team {
   font-size: 22px;
@@ -98,39 +94,6 @@ button {
   opacity:0.7;
   margin:6px 0;
 }
-
-/* ===================== ROUND LAYOUT ===================== */
-
-/* Two-column layout for courts */
-.current-round,
-.next-round {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* ✅ two columns */
-  gap: 12px 24px; /* row gap, column gap */
-}
-
-/* Each court block */
-.matchup {
-  padding: 8px;
-  border-radius: 6px;
-  background: #f8f8f8;
-  text-align: center;
-}
-
-/* ===== TWO COLUMN COURT GRID ===== */
-.round-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px 48px;
-}
-
-/* Individual court block */
-.matchup {
-  text-align: center;
-  padding: 8px;
-}
-
-
 </style>
 </head>
 
@@ -144,22 +107,7 @@ button {
 
 <!-- ===== MAIN MENU ===== -->
 <div id="menuView">
-  <h1>Court Scheduler</h1>
-
-
-<label>Number of Players</label>
-<input
-  id="playerCountInput"
-  type="number"
-  min="1"
-  max="20"
-  placeholder="e.g. 9"
-/>
-
-<button onclick="generateNumberedPlayers()">
-  Generate Players
-</button>
-
+  <h1>Pickleball Scheduler</h1>
 
   <label>Players</label>
 <textarea id="playersInput" rows="3"
@@ -169,14 +117,6 @@ button {
 
 <button onclick="addPlayer()">Add Player</button>
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
-
-
-<label>Match Type</label>
-<select id="matchTypeSelect">
-  <option value="doubles" selected>Doubles</option>
-  <option value="singles">Singles</option>
-</select>
-
 
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
@@ -198,7 +138,7 @@ button {
 <!-- ===== ROUND VIEW ===== -->
 <div id="roundView" style="display:none;">
   <h2 id="roundHeading">Current Round</h2>
-  <div id="currentRoundNames" class="round-grid"></div>
+  <div id="currentRoundNames"></div>
 
   <div id="timerDisplay" class="timer">00:00</div>
 
@@ -215,7 +155,7 @@ button {
   <button onclick="togglePause()">Pause / Resume</button>
 
   <h3 id="nextHeading">Next Round</h3>
-  <div id="nextRoundNames" class="round-grid"></div>
+  <div id="nextRoundNames"></div>
 
   <button onclick="nextRound()">Next Round</button>
   <button class="secondary" onclick="goToMenu()">Back to Menu</button>
@@ -243,7 +183,6 @@ const timerDisplayRunning = document.getElementById("timerDisplayRunning");
 
 let players = [], courts = 1;
 let playCount = {}, sitoutStreak = {}, partnerCount = {};
-let matchType = "doubles"; // or "singles"
 
 let currentRound = null, nextRoundData = null;
 let roundState = "idle";
@@ -263,40 +202,6 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
-
-
-function generateNumberedPlayers() {
-  const countInput = document.getElementById("playerCountInput");
-  const n = parseInt(countInput.value, 10);
-
-  if (isNaN(n) || n <= 0) {
-    alert("Please enter a valid number of players.");
-    return;
-  }
-
-  if (n > 50) {
-    alert("Please enter 50 or fewer players.");
-    return;
-  }
-
-  // Create players: "1, 2, 3, ..., n"
-  const generatedPlayers = [];
-  for (let i = 1; i <= n; i++) {
-    generatedPlayers.push(String(i));
-  }
-
-  // Populate the textarea exactly as if user typed them
-  playersInput.value = generatedPlayers.join(", ");
-
-  // Clear any leftover per-player state if session is not active
-  if (!sessionActive) {
-    players = [];
-    playCount = {};
-    sitoutStreak = {};
-    partnerCount = {};
-  }
-}
-
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
@@ -559,49 +464,20 @@ function balanceWeight() {
 }
 
 
-function playersPerCourt() {
-  return matchType === "singles" ? 2 : 4;
-}
-
-// ===================== PARTNER HELPERS =====================
-
-function getPartnerPenalty(a, b) {
-  if (matchType !== "doubles") return 0;
-  return partnerCount[a]?.[b] || 0;
-}
-
-
-function recordPartners(a, b) {
-  if (matchType !== "doubles") return;
-
-  partnerCount[a] = partnerCount[a] || {};
-  partnerCount[b] = partnerCount[b] || {};
-  partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
-  partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
-}
-
-
-
-function renderTeam(team) {
-  return team.length === 1
-    ? team[0]
-    : `${team[0]} & ${team[1]}`;
-}
-
 function generateRound() {
   const MAX_SITOUT = 2;
+  const slots = courts * 4;
 
-  const perCourt = playersPerCourt();
-  const slots = courts * perCourt;
-
-  // ----- Ensure player state exists -----
+  // Ensure state exists
   players.forEach(p => {
     playCount[p] ??= 0;
     sitoutStreak[p] ??= 0;
     partnerCount[p] ??= {};
   });
 
-  // ----- STEP 1: Force players who sat too long -----
+  /* --------------------------------------------------
+     STEP 1: Force players who sat out too long
+     -------------------------------------------------- */
   let forcedPlayers = players
     .filter(p => sitoutStreak[p] >= MAX_SITOUT)
     .sort((a, b) => playCount[a] - playCount[b]);
@@ -612,7 +488,9 @@ function generateRound() {
 
   let playing = [...forcedPlayers];
 
-  // ----- STEP 2: Fill remaining slots fairly -----
+  /* --------------------------------------------------
+     STEP 2: Fill remaining slots fairly
+     -------------------------------------------------- */
   const remainingSlots = slots - playing.length;
 
   if (remainingSlots > 0) {
@@ -625,10 +503,22 @@ function generateRound() {
         return sitoutStreak[b] - sitoutStreak[a];
       });
 
-    playing.push(...candidates.slice(0, remainingSlots));
+    // Controlled randomness buffer
+    const buffer = Math.min(
+      2,
+      Math.max(0, candidates.length - remainingSlots)
+    );
+
+    const pool = candidates
+      .slice(0, remainingSlots + buffer)
+      .sort(() => Math.random() - 0.5);
+
+    playing.push(...pool.slice(0, remainingSlots));
   }
 
-  // ----- STEP 3: Update sit‑out streaks -----
+  /* --------------------------------------------------
+     STEP 3: Update sit‑out streaks
+     -------------------------------------------------- */
   players.forEach(p => {
     if (playing.includes(p)) {
       sitoutStreak[p] = 0;
@@ -636,39 +526,6 @@ function generateRound() {
       sitoutStreak[p]++;
     }
   });
-
-  // ----- STEP 4: Build matches (THIS WAS THE BUG) -----
-  const matches = [];
-
-  for (let c = 0; c < courts; c++) {
-    const start = c * perCourt;
-    const block = playing.slice(start, start + perCourt);
-
-    if (block.length < perCourt) break;
-
-    if (matchType === "singles") {
-      matches.push({
-        teamA: [block[0]],
-        teamB: [block[1]]
-      });
-    } else {
-      matches.push({
-        teamA: [block[0], block[1]],
-        teamB: [block[2], block[3]]
-      });
-    }
-  }
-
-  // ----- STEP 5: Update play counts -----
-  playing.forEach(p => playCount[p]++);
-
-  return { matches };
-}
-
-function playersPerCourt() {
-  return matchType === "singles" ? 2 : 4;
-}
-
 
   /* --------------------------------------------------
      STEP 4: Pair players (UNCHANGED LOGIC)
@@ -728,21 +585,7 @@ const score = partnerScore + balanceScore;
 
     const [a, b, c, d] = bestCombo;
 
-    
-if (matchType === "singles") {
-  // ✅ Singles: 1 vs 1
-  matches.push({
-    teamA: [players[0]],
-    teamB: [players[1]]
-  });
-} else {
-  // ✅ Doubles: 2 vs 2
-  matches.push({
-    teamA: [players[0], players[1]],
-    teamB: [players[2], players[3]]
-  });
-}
-
+    matches.push({ teamA: [a, b], teamB: [c, d] });
 
     // Commit partner history
     partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
@@ -767,7 +610,6 @@ function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
   timerMinutes = parseInt(timerMinutesInput.value,10)||8;
-matchType = matchTypeSelect.value; // "singles" or "doubles"
 
   playCount={}; sitoutStreak={}; partnerCount={};
   timerSeconds = timerMinutes*60;
