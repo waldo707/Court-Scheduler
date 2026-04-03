@@ -36,15 +36,12 @@ button {
   margin-top: 14px;
 }
 
-/* ===================== ROUND COLUMNS (TOP‑TO‑BOTTOM) ===================== */
-
+/* ===================== ROUND COLUMNS (TOP-TO-BOTTOM) ===================== */
 
 .round-grid {
   width: 100%;
-  columns: 2 400px;   /* 2 columns, minimum 400px wide */
+  columns: 2 400px;   /* two columns, minimum width per column */
   column-gap: 40px;
- column-fill: balance;  /* ✅ THIS FIXES IT */
- max-height: calc(100vh - 300px);
 }
 
 /* Prevent games from splitting across columns */
@@ -56,7 +53,6 @@ button {
   background: #f8f8f8;
   text-align: center;
 }
-
 .court-label {
   font-weight: 700;
   text-decoration: underline;
