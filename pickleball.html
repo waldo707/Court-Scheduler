@@ -218,6 +218,7 @@ let timerMinutes = 8, timerSeconds = 0;
 let timerInterval = null, timerRunning = false;
 let resumeShouldRestartTimer = false;
 let roundEndTime = null;
+let matchType = "doubles";
 
 /* ===================== VIEW ===================== */
 function setView(v){
@@ -659,7 +660,8 @@ const score = partnerScore + balanceScore;
 function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
-  timerMinutes = parseInt(timerMinutesInput.value,10)||8;
+  timerMinutes = parseInt(timerMinutesInput.value,10)||5;
+matchType = matchTypeSelect.value;
 
   playCount={}; sitoutStreak={}; partnerCount={};
   timerSeconds = timerMinutes*60;
