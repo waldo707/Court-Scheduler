@@ -147,6 +147,12 @@ button {
 <button onclick="addPlayer()">Add Player</button>
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
 
+<label>Match Type</label>
+<select id="matchTypeInput">
+  <option value="doubles" selected>Doubles</option>
+  <option value="singles">Singles</option>
+</select>
+
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
 
@@ -228,6 +234,8 @@ let roundState = "idle";
 let sessionActive = false;
 let nextRoundLocked = false;
 let roundNumber = 1; 
+let matchType = "doubles";
+``
 
 /* Timer */
 let timerMinutes = 8, timerSeconds = 0;
@@ -529,7 +537,9 @@ function balanceWeight() {
 
 function generateRound() {
   const MAX_SITOUT = 2;
-  const slots = courts * 4;
+ 
+const slots = courts * playersPerCourt();
+
 
   // Ensure state exists
   players.forEach(p => {
@@ -594,8 +604,30 @@ function generateRound() {
      STEP 4: Pair players (UNCHANGED LOGIC)
      -------------------------------------------------- */
   let matches = [];
-  let pool = [...playing];
+let pool = [...playing];
 
+if (matchType === "singles") {
+
+  // ===== SINGLES PAIRING =====
+  while (pool.length >= 2) {
+    const a = pool[0];
+    const b = pool[1];
+
+    matches.push({
+      teamA: [a],
+      teamB: [b]
+    });
+
+    // ✅ Update play counts
+    playCount[a]++;
+    playCount[b]++;
+
+    pool = pool.filter(p => ![a, b].includes(p));
+  }
+
+} else {
+
+  // ===== DOUBLES PAIRING (UNCHANGED) =====
   while (pool.length >= 4) {
     let bestCombo = null;
     let bestScore = Infinity;
@@ -604,38 +636,34 @@ function generateRound() {
       for (let j = i + 1; j < pool.length; j++) {
         for (let k = 0; k < pool.length; k++) {
           for (let l = k + 1; l < pool.length; l++) {
+
             const set = new Set([i, j, k, l]);
             if (set.size < 4) continue;
 
-            const a = pool[i], b = pool[j];
-            const c = pool[k], d = pool[l];
+            const a = pool[i];
+            const b = pool[j];
+            const c = pool[k];
+            const d = pool[l];
 
-            
+            const pw = partnerRepeatWeight();
+            const bw = balanceWeight();
 
-const pw = partnerRepeatWeight();
-const bw = balanceWeight();
+            const partnerScore =
+              ((partnerCount[a][b] || 0) * pw) +
+              ((partnerCount[c][d] || 0) * pw);
 
-// ===== Partner repeat penalty =====
-const partnerScore =
-  ((partnerCount[a][b] || 0) * pw) +
-  ((partnerCount[c][d] || 0) * pw);
+            const minCount = Math.min(
+              playCount[a], playCount[b],
+              playCount[c], playCount[d]
+            );
 
-// ===== Play-count balance penalty =====
-const minCount = Math.min(
-  playCount[a],
-  playCount[b],
-  playCount[c],
-  playCount[d]
-);
+            const balanceScore =
+              ((playCount[a] - minCount) +
+               (playCount[b] - minCount) +
+               (playCount[c] - minCount) +
+               (playCount[d] - minCount)) * bw;
 
-const balanceScore =
-  ((playCount[a] - minCount) +
-   (playCount[b] - minCount) +
-   (playCount[c] - minCount) +
-   (playCount[d] - minCount)) * bw;
-
-// ===== Final hybrid score =====
-const score = partnerScore + balanceScore;
+            const score = partnerScore + balanceScore;
 
             if (score < bestScore) {
               bestScore = score;
@@ -648,15 +676,18 @@ const score = partnerScore + balanceScore;
 
     const [a, b, c, d] = bestCombo;
 
-    matches.push({ teamA: [a, b], teamB: [c, d] });
+    matches.push({
+      teamA: [a, b],
+      teamB: [c, d]
+    });
 
-    // Commit partner history
+    // ✅ Partner tracking ONLY in doubles
     partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
     partnerCount[b][a] = partnerCount[a][b];
     partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
     partnerCount[d][c] = partnerCount[c][d];
 
-    // Commit play counts
+    // ✅ Play counts
     playCount[a]++;
     playCount[b]++;
     playCount[c]++;
@@ -664,6 +695,8 @@ const score = partnerScore + balanceScore;
 
     pool = pool.filter(p => ![a, b, c, d].includes(p));
   }
+}
+
 
   return { matches };
 }
@@ -673,6 +706,8 @@ function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
   timerMinutes = parseInt(timerMinutesInput.value,10)||8;
+
+matchType = document.getElementById("matchTypeInput").value; // ✅ ADD THIS
 
   playCount={}; sitoutStreak={}; partnerCount={};
   timerSeconds = timerMinutes*60;
@@ -688,6 +723,9 @@ roundNumber = 1;
   setView("round");
 }
 
+function playersPerCourt() {
+  return matchType === "singles" ? 2 : 4;
+}
 
 function resumeSchedule() {
   if (!sessionActive) {
