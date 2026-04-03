@@ -118,6 +118,11 @@ button {
 <button onclick="addPlayer()">Add Player</button>
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
 
+
+<label>Number of Players</label>
+<input id="numPlayersInput" type="number" min="4" value="8">
+<button onclick="generateNumberedPlayers()">Generate Players</button>
+
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
 
@@ -202,6 +207,23 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
+
+
+function generateNumberedPlayers() {
+  const num = parseInt(document.getElementById("numPlayersInput").value, 10);
+
+  if (!num || num < 4) {
+    alert("Enter at least 4 players.");
+    return;
+  }
+
+  // Create players as numbers: 1, 2, 3...
+  const list = [];
+  for (let i = 1; i <= num; i++) {
+    list.push(i.toString());
+    // OR use: list.push(`Player ${i}`);
+  }
+
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
