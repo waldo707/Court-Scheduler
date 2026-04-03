@@ -530,7 +530,7 @@ function balanceWeight() {
 
 function generateRound() {
   const MAX_SITOUT = 2;
-  const slots = courts * 4;
+  const slots = courts * playersPerCourt();
 
   // Ensure state exists
   players.forEach(p => {
@@ -649,7 +649,19 @@ const score = partnerScore + balanceScore;
 
     const [a, b, c, d] = bestCombo;
 
-    matches.push({ teamA: [a, b], teamB: [c, d] });
+    
+if (matchType === "singles") {
+  matches.push({
+    teamA: [a],
+    teamB: [b]
+  });
+} else {
+  matches.push({
+    teamA: [a, b],
+    teamB: [c, d]
+  });
+}
+
 
     // Commit partner history
     partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
@@ -770,9 +782,11 @@ function render(){
     currentRound.matches.map((m,i)=>`
       <div class="matchup">
         <div class="court-label">Court ${i+1}</div>
-        <div class="team">${m.teamA[0]} & ${m.teamA[1]}</div>
-        <div class="vs">vs</div>
-        <div class="team">${m.teamB[0]} & ${m.teamB[1]}</div>
+        
+<div class="team">${renderTeam(m.teamA)}</div>
+<div class="vs">vs</div>
+<div class="team">${renderTeam(m.teamB)}</
+
       </div>`).join("");
 
   nextRoundNames.innerHTML =
