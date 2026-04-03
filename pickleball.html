@@ -622,6 +622,11 @@ function generateRound() {
     }
   });
 
+function playersPerCourt() {
+  return matchType === "singles" ? 2 : 4;
+}
+
+
   /* --------------------------------------------------
      STEP 4: Pair players (UNCHANGED LOGIC)
      -------------------------------------------------- */
@@ -680,7 +685,21 @@ const score = partnerScore + balanceScore;
 
     const [a, b, c, d] = bestCombo;
 
-    matches.push({ teamA: [a, b], teamB: [c, d] });
+    
+if (matchType === "singles") {
+  // ✅ Singles: 1 vs 1
+  matches.push({
+    teamA: [players[0]],
+    teamB: [players[1]]
+  });
+} else {
+  // ✅ Doubles: 2 vs 2
+  matches.push({
+    teamA: [players[0], players[1]],
+    teamB: [players[2], players[3]]
+  });
+}
+
 
     // Commit partner history
     partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
