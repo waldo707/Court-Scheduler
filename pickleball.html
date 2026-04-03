@@ -109,6 +109,21 @@ button {
 <div id="menuView">
   <h1>Pickleball Scheduler</h1>
 
+
+<label>Number of Players</label>
+<input
+  id="playerCountInput"
+  type="number"
+  min="1"
+  max="20"
+  placeholder="e.g. 9"
+/>
+
+<button onclick="generateNumberedPlayers()">
+  Generate Players
+</button>
+
+
   <label>Players</label>
 <textarea id="playersInput" rows="3"
   placeholder="Brian, Mike, Sherry, Sue"></textarea>
@@ -202,6 +217,40 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
+
+
+function generateNumberedPlayers() {
+  const countInput = document.getElementById("playerCountInput");
+  const n = parseInt(countInput.value, 10);
+
+  if (isNaN(n) || n <= 0) {
+    alert("Please enter a valid number of players.");
+    return;
+  }
+
+  if (n > 20) {
+    alert("Please enter 20 or fewer players.");
+    return;
+  }
+
+  // Create players: "1, 2, 3, ..., n"
+  const generatedPlayers = [];
+  for (let i = 1; i <= n; i++) {
+    generatedPlayers.push(String(i));
+  }
+
+  // Populate the textarea exactly as if user typed them
+  playersInput.value = generatedPlayers.join(", ");
+
+  // Clear any leftover per-player state if session is not active
+  if (!sessionActive) {
+    players = [];
+    playCount = {};
+    sitoutStreak = {};
+    partnerCount = {};
+  }
+}
+
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
