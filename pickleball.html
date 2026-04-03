@@ -36,6 +36,44 @@ button {
   margin-top: 14px;
 }
 
+
+/* ===================== ROUND GRID (TWO COLUMNS) ===================== */
+
+  .round-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 40px; /* row gap, column gap */
+  }
+
+  .matchup {
+    padding: 12px;
+    border-radius: 6px;
+    background: #f8f8f8;
+    text-align: center;
+  }
+
+  .court-label {
+    font-weight: 700;
+    text-decoration: underline;
+    margin-bottom: 6px;
+  }
+
+  .team {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .vs {
+    opacity: 0.6;
+    margin: 6px 0;
+  }
+
+  /* Mobile fallback */
+  @media (max-width: 700px) {
+    .round-grid {
+      grid-template-columns: 1fr;
+    }
+
 .secondary { background:#666; }
 
 /* Timer */
