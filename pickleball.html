@@ -216,6 +216,30 @@ function setView(v){
   runningView.style.display = v==="running" ? "block" : "none";
 }
 /* ===================== ADD PLAYER ===================== */
+function generateNumberedPlayers() {
+  const countInput = document.getElementById("playerCountInput");
+  const textarea = document.getElementById("playersInput");
+
+  const count = parseInt(countInput.value, 10);
+
+  if (isNaN(count) || count < 1) {
+    alert("Please enter a valid number of players.");
+    return;
+  }
+
+  if (count > 50) {
+    alert("Maximum supported players is 50.");
+    return;
+  }
+
+  const players = [];
+  for (let i = 1; i <= count; i++) {
+    players.push(String(i));
+  }
+
+  textarea.value = players.join(", ");
+}
+
 function addPlayer() {
   const name = playerActionInput.value.trim();
   if (!name) return;
