@@ -36,19 +36,18 @@ button {
   margin-top: 14px;
 }
 
-/* ===================== ROUND COLUMNS (TOP-TO-BOTTOM) ===================== */
+
+/* ===================== ROUND GRID (COLUMN-MAJOR) ===================== */
 
 .round-grid {
-  width: 100%;
-  columns: 2 400px;   /* two columns, minimum width per column */
-  column-gap: 40px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto); /* adjust dynamically */
+  gap: 24px 40px;
 }
 
-/* Prevent games from splitting across columns */
 .matchup {
-  break-inside: avoid;
   padding: 12px;
-  margin-bottom: 24px;
   border-radius: 6px;
   background: #f8f8f8;
   text-align: center;
