@@ -828,6 +828,18 @@ function render(){
 
       </div>`).join("");
 
+const totalCourts = currentRound.matches.length;
+const rows = Math.ceil(totalCourts / 2);
+
+currentRoundNames.style.gridTemplateRows = `repeat(${rows}, auto)`;
+
+const nextTotal = nextRoundData.matches.length;
+const nextRows = Math.ceil(nextTotal / 2);
+
+nextRoundNames.style.gridTemplateRows = `repeat(${nextRows}, auto)`;
+
+
+
   nextRoundNames.innerHTML =
     nextRoundData.matches.map((m,i)=>`
       <div class="matchup">
