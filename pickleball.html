@@ -170,6 +170,14 @@ button {
 <button onclick="addPlayer()">Add Player</button>
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
 
+
+<label>Match Type</label>
+<select id="matchTypeSelect">
+  <option value="doubles" selected>Doubles</option>
+  <option value="singles">Singles</option>
+</select>
+
+
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
 
@@ -235,6 +243,7 @@ const timerDisplayRunning = document.getElementById("timerDisplayRunning");
 
 let players = [], courts = 1;
 let playCount = {}, sitoutStreak = {}, partnerCount = {};
+let matchType = "doubles"; // or "singles"
 
 let currentRound = null, nextRoundData = null;
 let roundState = "idle";
@@ -696,6 +705,7 @@ function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
   timerMinutes = parseInt(timerMinutesInput.value,10)||8;
+matchType = matchTypeSelect.value; // "singles" or "doubles"
 
   playCount={}; sitoutStreak={}; partnerCount={};
   timerSeconds = timerMinutes*60;
