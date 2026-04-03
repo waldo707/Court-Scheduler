@@ -39,6 +39,7 @@ button {
 /* ===================== ROUND COLUMNS (TOP‑TO‑BOTTOM) ===================== */
 
 .round-grid {
+  width: 100%;
   column-count: 2;
   column-gap: 40px;
 }
@@ -53,42 +54,28 @@ button {
   text-align: center;
 }
 
+.court-label {
+  font-weight: 700;
+  text-decoration: underline;
+  margin-bottom: 6px;
+}
+
+.team {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.vs {
+  opacity: 0.6;
+  margin: 6px 0;
+}
+
 /* Mobile fallback */
 @media (max-width: 700px) {
   .round-grid {
     column-count: 1;
   }
 }
-
-  .matchup {
-    padding: 12px;
-    border-radius: 6px;
-    background: #f8f8f8;
-    text-align: center;
-  }
-
-  .court-label {
-    font-weight: 700;
-    text-decoration: underline;
-    margin-bottom: 6px;
-  }
-
-  .team {
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  .vs {
-    opacity: 0.6;
-    margin: 6px 0;
-  }
-
-  /* Mobile fallback */
-  @media (max-width: 700px) {
-    .round-grid {
-      grid-template-columns: 1fr;
-    }
-
 .secondary { background:#666; }
 
 /* Timer */
