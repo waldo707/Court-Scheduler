@@ -563,6 +563,25 @@ function playersPerCourt() {
   return matchType === "singles" ? 2 : 4;
 }
 
+// ===================== PARTNER HELPERS =====================
+
+function getPartnerPenalty(a, b) {
+  if (matchType !== "doubles") return 0;
+  return partnerCount[a]?.[b] || 0;
+}
+
+
+function recordPartners(a, b) {
+  if (matchType !== "doubles") return;
+
+  partnerCount[a] = partnerCount[a] || {};
+  partnerCount[b] = partnerCount[b] || {};
+  partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+  partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
+}
+
+
+
 function renderTeam(team) {
   return team.length === 1
     ? team[0]
