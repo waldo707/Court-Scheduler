@@ -36,13 +36,27 @@ button {
   margin-top: 14px;
 }
 
+/* ===================== ROUND COLUMNS (TOP‑TO‑BOTTOM) ===================== */
 
-/* ===================== ROUND GRID (TWO COLUMNS) ===================== */
+.round-grid {
+  column-count: 2;
+  column-gap: 40px;
+}
 
+/* Prevent games from splitting across columns */
+.matchup {
+  break-inside: avoid;
+  padding: 12px;
+  margin-bottom: 24px;
+  border-radius: 6px;
+  background: #f8f8f8;
+  text-align: center;
+}
+
+/* Mobile fallback */
+@media (max-width: 700px) {
   .round-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px 40px; /* row gap, column gap */
+    column-count: 1;
   }
 
   .matchup {
