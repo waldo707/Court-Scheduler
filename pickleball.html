@@ -109,20 +109,6 @@ button {
 <div id="menuView">
   <h1>Pickleball Scheduler</h1>
 
-<label>Number of Players</label>
-<input
-  id="playerCountInput"
-  type="number"
-  min="1"
-  max="50"
-  placeholder="e.g. 12"
-/>
-
-<button onclick="generateNumberedPlayers()">
-  Generate Player Numbers
-</button>
-
-
   <label>Players</label>
 <textarea id="playersInput" rows="3"
   placeholder="Brian, Mike, Sherry, Sue"></textarea>
@@ -216,21 +202,6 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
-
-
-<label>Number of Players</label>
-<input
-  id="playerCountInput"
-  type="number"
-  min="1"
-  max="50"
-  placeholder="e.g. 12"
-/>
-
-<button onclick="generateNumberedPlayers()">
-  Generate Player Numbers
-</button>
-
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
