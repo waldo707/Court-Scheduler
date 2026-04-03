@@ -217,6 +217,33 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
+
+function generateNumberedPlayers() {
+  const input = document.getElementById("playerCountInput");
+  const textarea = document.getElementById("playersInput");
+
+  const count = parseInt(input.value, 10);
+
+  if (!count || count < 1) {
+    alert("Please enter a valid number of players.");
+    return;
+  }
+
+  if (count > 50) {
+    alert("Maximum supported players is 50.");
+    return;
+  }
+
+  // Create "1, 2, 3, ... N"
+  const players = [];
+  for (let i = 1; i <= count; i++) {
+    players.push(i.toString());
+  }
+
+  // Populate the EXISTING textarea
+  textarea.value = players.join(", ");
+}
+
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
