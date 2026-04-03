@@ -487,6 +487,19 @@ function togglePause(){
   timerRunning=false;
 }
 
+function playersPerCourt() {
+  return matchType === "singles" ? 2 : 4;
+}
+
+
+function renderTeam(team) {
+  if (!Array.isArray(team)) return "";
+  if (team.length === 1) return team[0]; // singles
+  return `${team[0]} & ${team[1]}`;       // doubles
+}
+
+
+
 
 
 /* ===================== FAIRNESS SCHEDULER ===================== */
@@ -660,7 +673,7 @@ const score = partnerScore + balanceScore;
 function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
-  timerMinutes = parseInt(timerMinutesInput.value,10)||5;
+  timerMinutes = parseInt(timerMinutesInput.value,10)||8;
 matchType = matchTypeSelect.value;
 
   playCount={}; sitoutStreak={}; partnerCount={};
