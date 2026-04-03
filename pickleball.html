@@ -849,22 +849,24 @@ function render() {
 
   const nextSplit = Math.ceil(nextRoundData.matches.length / 2);
 
-  nextRoundData.matches.forEach((m, i) => {
-    const html = `
-      <div class="matchup">
-        <div class="court-label">Court ${i + 1}</div>
-        <div class="team">${m.teamA[0]} & ${m.teamA[1]}</div>
-        <div class="vs">vs</div>
-        <div class="team">${m.teamB[0]} & ${m.teamB[1]}</div>
-      </div>
-    `;
+ 
+nextRoundData.matches.forEach((m, i) => {
+  const html = `
+    <div class="matchup">
+      <div class="court-label">Court ${i + 1}</div>
+      <div class="team">${renderTeam(m.teamA)}</div>
+      <div class="vs">vs</div>
+      <div class="team">${renderTeam(m.teamB)}</div>
+    </div>
+  `;
 
-    if (i < nextSplit) {
-      nextLeft.innerHTML += html;
-    } else {
-      nextRight.innerHTML += html;
-    }
-  });
+  if (i < nextSplit) {
+    nextLeft.innerHTML += html;
+  } else {
+    nextRight.innerHTML += html;
+  }
+});
+
 }
 ``
 
