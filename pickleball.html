@@ -590,18 +590,18 @@ function renderTeam(team) {
 
 function generateRound() {
   const MAX_SITOUT = 2;
-  const slots = courts * 4;
 
-  // Ensure state exists
+  const perCourt = playersPerCourt();
+  const slots = courts * perCourt;
+
+  // ----- Ensure player state exists -----
   players.forEach(p => {
     playCount[p] ??= 0;
     sitoutStreak[p] ??= 0;
     partnerCount[p] ??= {};
   });
 
-  /* --------------------------------------------------
-     STEP 1: Force players who sat out too long
-     -------------------------------------------------- */
+  // ----- STEP 1: Force players who sat too long -----
   let forcedPlayers = players
     .filter(p => sitoutStreak[p] >= MAX_SITOUT)
     .sort((a, b) => playCount[a] - playCount[b]);
@@ -612,9 +612,7 @@ function generateRound() {
 
   let playing = [...forcedPlayers];
 
-  /* --------------------------------------------------
-     STEP 2: Fill remaining slots fairly
-     -------------------------------------------------- */
+  // ----- STEP 2: Fill remaining slots fairly -----
   const remainingSlots = slots - playing.length;
 
   if (remainingSlots > 0) {
@@ -627,22 +625,10 @@ function generateRound() {
         return sitoutStreak[b] - sitoutStreak[a];
       });
 
-    // Controlled randomness buffer
-    const buffer = Math.min(
-      2,
-      Math.max(0, candidates.length - remainingSlots)
-    );
-
-    const pool = candidates
-      .slice(0, remainingSlots + buffer)
-      .sort(() => Math.random() - 0.5);
-
-    playing.push(...pool.slice(0, remainingSlots));
+    playing.push(...candidates.slice(0, remainingSlots));
   }
 
-  /* --------------------------------------------------
-     STEP 3: Update sit‑out streaks
-     -------------------------------------------------- */
+  // ----- STEP 3: Update sit‑out streaks -----
   players.forEach(p => {
     if (playing.includes(p)) {
       sitoutStreak[p] = 0;
@@ -650,6 +636,34 @@ function generateRound() {
       sitoutStreak[p]++;
     }
   });
+
+  // ----- STEP 4: Build matches (THIS WAS THE BUG) -----
+  const matches = [];
+
+  for (let c = 0; c < courts; c++) {
+    const start = c * perCourt;
+    const block = playing.slice(start, start + perCourt);
+
+    if (block.length < perCourt) break;
+
+    if (matchType === "singles") {
+      matches.push({
+        teamA: [block[0]],
+        teamB: [block[1]]
+      });
+    } else {
+      matches.push({
+        teamA: [block[0], block[1]],
+        teamB: [block[2], block[3]]
+      });
+    }
+  }
+
+  // ----- STEP 5: Update play counts -----
+  playing.forEach(p => playCount[p]++);
+
+  return { matches };
+}
 
 function playersPerCourt() {
   return matchType === "singles" ? 2 : 4;
