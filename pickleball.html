@@ -161,7 +161,8 @@ button {
 <!-- ===== ROUND VIEW ===== -->
 <div id="roundView" style="display:none;">
   <h2 id="roundHeading">Current Round</h2>
-  <div id="currentRoundNames"></div>
+  
+<div id="currentRoundNames" class="round-grid"></div>
 
   <div id="timerDisplay" class="timer">00:00</div>
 
@@ -178,7 +179,7 @@ button {
   <button onclick="togglePause()">Pause / Resume</button>
 
   <h3 id="nextHeading">Next Round</h3>
-  <div id="nextRoundNames"></div>
+  <div id="nextRoundNames" class="round-grid"></div>
 
   <button onclick="nextRound()">Next Round</button>
   <button class="secondary" onclick="goToMenu()">Back to Menu</button>
