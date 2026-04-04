@@ -560,22 +560,21 @@ function generateRound() {
   /* =========================================================
    ✅ EARLY EXIT: EVERYONE FITS → EVERYONE PLAYS
    ========================================================= */
-  if (slots === playerCount) {
+ if (slots === playerCount) {
   const matches = [];
 
-  // ✅ Shuffle players so rotations occur
-  const pool = [...players].sort(() => Math.random() - 0.5);
+  // ✅ Deterministic rotation so Next Round changes
+  const rotation = roundNumber % players.length;
+  const pool = [
+    ...players.slice(rotation),
+    ...players.slice(0, rotation)
+  ];
 
   if (matchType === "singles") {
     while (pool.length >= 2) {
       const a = pool.shift();
       const b = pool.shift();
-
-      matches.push({
-        teamA: [a],
-        teamB: [b],
-      });
-
+      matches.push({ teamA: [a], teamB: [b] });
       playCount[a]++;
       playCount[b]++;
     }
@@ -586,11 +585,9 @@ function generateRound() {
       const c = pool.shift();
       const d = pool.shift();
 
-      matches.push({
-        teamA: [a, b],
-        teamB: [c, d],
-      });
+      matches.push({ teamA: [a, b], teamB: [c, d] });
 
+      // partner tracking still OK
       partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
       partnerCount[b][a] = partnerCount[a][b];
       partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
@@ -603,14 +600,11 @@ function generateRound() {
     }
   }
 
-  // ✅ Nobody sat out
-  players.forEach(p => {
-    sitoutStreak[p] = 0;
-  });
+  // no sitouts in this case
+  players.forEach(p => sitoutStreak[p] = 0);
 
   return { matches };
 }
-
 
   /* =========================================================
    NORMAL FAIRNESS LOGIC (SIT-OUTS REQUIRED)
