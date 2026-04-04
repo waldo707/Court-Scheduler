@@ -542,7 +542,9 @@ function balanceWeight() {
 function generateRound() {
   const MAX_SITOUT = 2;
  
-const slots = courts * playersPerCourt();
+
+const slots = Math.min(players.length, courts * playersPerCourt());
+const remainingSlots = Math.max(0, slots - playing.length);
 
 
   // Ensure state exists
