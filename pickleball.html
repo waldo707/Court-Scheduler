@@ -615,41 +615,54 @@ function generateRound() {
    ========================================================= */
 
   // Step 1: Force players who sat out too long
-  let forcedPlayers = players
-    .filter(p => sitoutStreak[p] >= MAX_SITOUT)
-    .sort((a, b) => playCount[a] - playCount[b]);
+  
 
-  if (forcedPlayers.length > slots) {
-    forcedPlayers = forcedPlayers.slice(0, slots);
+// Step 1: Players who MUST play (no starvation)
+let forcedPlayers = players.filter(
+  p => sitoutStreak[p] >= MAX_SITOUT
+);
+
+// If forced players exceed available slots, prioritize fairly
+if (forcedPlayers.length > slots) {
+  forcedPlayers = forcedPlayers
+    .sort((a, b) => playCount[a] - playCount[b])
+    .slice(0, slots);
+}
+
+// Step 2: Start playing list with forced players
+let playing = [...forcedPlayers];
+
+// ✅ Step 3: Ensure forced players are ALWAYS included
+forcedPlayers.forEach(p => {
+  if (!playing.includes(p)) {
+    playing.push(p);
   }
+});
 
-  let playing = [...forcedPlayers];
+// Step 4: Fill remaining slots fairly
+const remainingSlots = Math.max(0, slots - playing.length);
 
-  // Step 2: Fill remaining slots fairly
-  const remainingSlots = Math.max(0, slots - playing.length);
+if (remainingSlots > 0) {
+  const candidates = players
+    .filter(p => !playing.includes(p))
+    .sort((a, b) => {
+      if (playCount[a] !== playCount[b]) {
+        return playCount[a] - playCount[b];
+      }
+      return sitoutStreak[b] - sitoutStreak[a];
+    });
 
-  if (remainingSlots > 0) {
-    const candidates = players
-      .filter(p => !playing.includes(p))
-      .sort((a, b) => {
-        if (playCount[a] !== playCount[b]) {
-          return playCount[a] - playCount[b];
-        }
-        return sitoutStreak[b] - sitoutStreak[a];
-      });
+  const buffer = Math.min(
+    2,
+    Math.max(0, candidates.length - remainingSlots)
+  );
 
-    // Controlled randomness
-    const buffer = Math.min(
-      2,
-      Math.max(0, candidates.length - remainingSlots)
-    );
+  const pool = candidates
+    .slice(0, remainingSlots + buffer)
+    .sort(() => Math.random() - 0.5);
 
-    const pool = candidates
-      .slice(0, remainingSlots + buffer)
-      .sort(() => Math.random() - 0.5);
-
-    playing.push(...pool.slice(0, remainingSlots));
-  }
+  playing.push(...pool.slice(0, remainingSlots));
+}
 
   // Step 3: Update sit‑out streaks
   players.forEach(p => {
