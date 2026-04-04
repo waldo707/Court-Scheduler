@@ -561,54 +561,56 @@ function generateRound() {
    ✅ EARLY EXIT: EVERYONE FITS → EVERYONE PLAYS
    ========================================================= */
   if (slots === playerCount) {
-    const matches = [];
-    const pool = [...players];
+  const matches = [];
 
-    if (matchType === "singles") {
-      while (pool.length >= 2) {
-        const a = pool.shift();
-        const b = pool.shift();
+  // ✅ Shuffle players so rotations occur
+  const pool = [...players].sort(() => Math.random() - 0.5);
 
-        matches.push({
-          teamA: [a],
-          teamB: [b]
-        });
+  if (matchType === "singles") {
+    while (pool.length >= 2) {
+      const a = pool.shift();
+      const b = pool.shift();
 
-        playCount[a]++;
-        playCount[b]++;
-      }
-    } else {
-      while (pool.length >= 4) {
-        const a = pool.shift();
-        const b = pool.shift();
-        const c = pool.shift();
-        const d = pool.shift();
+      matches.push({
+        teamA: [a],
+        teamB: [b],
+      });
 
-        matches.push({
-          teamA: [a, b],
-          teamB: [c, d]
-        });
-
-        // Partner tracking (doubles only)
-        partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
-        partnerCount[b][a] = partnerCount[a][b];
-        partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
-        partnerCount[d][c] = partnerCount[c][d];
-
-        playCount[a]++;
-        playCount[b]++;
-        playCount[c]++;
-        playCount[d]++;
-      }
+      playCount[a]++;
+      playCount[b]++;
     }
+  } else {
+    while (pool.length >= 4) {
+      const a = pool.shift();
+      const b = pool.shift();
+      const c = pool.shift();
+      const d = pool.shift();
 
-    // No sit-outs this round
-    players.forEach(p => {
-      sitoutStreak[p] = 0;
-    });
+      matches.push({
+        teamA: [a, b],
+        teamB: [c, d],
+      });
 
-    return { matches };
+      partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+      partnerCount[b][a] = partnerCount[a][b];
+      partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
+      partnerCount[d][c] = partnerCount[c][d];
+
+      playCount[a]++;
+      playCount[b]++;
+      playCount[c]++;
+      playCount[d]++;
+    }
   }
+
+  // ✅ Nobody sat out
+  players.forEach(p => {
+    sitoutStreak[p] = 0;
+  });
+
+  return { matches };
+}
+
 
   /* =========================================================
    NORMAL FAIRNESS LOGIC (SIT-OUTS REQUIRED)
