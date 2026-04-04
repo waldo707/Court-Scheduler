@@ -562,18 +562,24 @@ function generateRound() {
    ========================================================= */
  if (slots === playerCount) {
   const matches = [];
+  let pool;
 
-  // ✅ Deterministic rotation so Next Round changes
-  const rotation = roundNumber % players.length;
-  const pool = [
-    ...players.slice(rotation),
-    ...players.slice(0, rotation)
-  ];
+  // ✅ Ensure different order from previous round
+  do {
+    pool = shuffledCopy(players);
+  } while (
+    currentRound &&
+    JSON.stringify(pool.slice(0, slots)) ===
+    JSON.stringify(
+      currentRound.matches.flatMap(m => [...m.teamA, ...m.teamB])
+    )
+  );
 
   if (matchType === "singles") {
     while (pool.length >= 2) {
       const a = pool.shift();
       const b = pool.shift();
+
       matches.push({ teamA: [a], teamB: [b] });
       playCount[a]++;
       playCount[b]++;
@@ -587,7 +593,6 @@ function generateRound() {
 
       matches.push({ teamA: [a, b], teamB: [c, d] });
 
-      // partner tracking still OK
       partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
       partnerCount[b][a] = partnerCount[a][b];
       partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
@@ -600,7 +605,7 @@ function generateRound() {
     }
   }
 
-  // no sitouts in this case
+  // ✅ Nobody sits out
   players.forEach(p => sitoutStreak[p] = 0);
 
   return { matches };
