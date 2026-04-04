@@ -544,8 +544,6 @@ function generateRound() {
  
 
 const slots = Math.min(players.length, courts * playersPerCourt());
-const remainingSlots = Math.max(0, slots - playing.length);
-
 
   // Ensure state exists
   players.forEach(p => {
@@ -570,7 +568,8 @@ const remainingSlots = Math.max(0, slots - playing.length);
   /* --------------------------------------------------
      STEP 2: Fill remaining slots fairly
      -------------------------------------------------- */
-  const remainingSlots = slots - playing.length;
+  const remainingSlots = Math.max(0, slots - playing.length);
+
 
   if (remainingSlots > 0) {
     let candidates = players
