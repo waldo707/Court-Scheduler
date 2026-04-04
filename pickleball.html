@@ -707,6 +707,20 @@ if (matchType === "singles") {
 
 /* ===================== FLOW ===================== */
 function start(){
+
+// ✅ FULL SESSION RESET
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  timerRunning = false;
+  roundState = "idle";
+  nextRoundLocked = false;
+  timerSeconds = parseInt(timerMinutesInput.value, 10) * 60;
+
+  // -------- existing code continues below --------
+
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value,10)||1;
   timerMinutes = parseInt(timerMinutesInput.value,10)||8;
