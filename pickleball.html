@@ -451,17 +451,21 @@ function updateTimer(){
 
   // ✅ Record absolute end time (mobile-safe)
   roundEndTime = Date.now() + timerSeconds * 1000;
-
   roundState = "running";
   nextRoundLocked = true;
   timerRunning = true;
 
+  // Switch to running view
   setView("running");
+
+  // ✅✅✅ THIS IS THE FIX
+  render();
 
   // Update immediately, then every second
   updateTimerFromClock();
   timerInterval = setInterval(updateTimerFromClock, 1000);
 }
+``
 
 function updateTimerFromClock() {
   if (!timerRunning || !roundEndTime) return;
