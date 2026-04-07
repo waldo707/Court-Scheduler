@@ -235,7 +235,7 @@ let sessionActive = false;
 let nextRoundLocked = false;
 let roundNumber = 1; 
 let matchType = "doubles";
-``
+
 
 /* Timer */
 let timerMinutes = 8, timerSeconds = 0;
@@ -465,7 +465,7 @@ function updateTimer(){
   updateTimerFromClock();
   timerInterval = setInterval(updateTimerFromClock, 1000);
 }
-``
+
 
 function updateTimerFromClock() {
   if (!timerRunning || !roundEndTime) return;
@@ -864,7 +864,7 @@ nextRoundData.matches.forEach((m, i) => {
 });
 
 }
-``
+
 
 </script>
 </body>
