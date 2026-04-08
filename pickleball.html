@@ -75,6 +75,10 @@ button {
 
 <body>
 
+<!-- GLOBAL TIMER -->
+<div id="globalTimer" class="timer">00:00</div>
+
+
 <!-- ===== MENU ===== -->
 <div id="menuView">
   <h1>Court Scheduler</h1>
@@ -115,7 +119,7 @@ button {
     <div id="currentRight" class="round-col"></div>
   </div>
 
-  <div id="timerDisplay" class="timer">00:00</div>
+  
 
   <button onclick="startTimer()">Start Timer</button>
   <button onclick="nextRound()">Next Round</button>
@@ -263,6 +267,7 @@ function nextRound() {
   timerSeconds = timerMinutes * 60;
   updateTimer();
 
+  // ADVANCE predictably
   currentRound = nextRoundData;
   nextRoundData = generateRound();
 
@@ -298,8 +303,7 @@ function stopTimer() {
 function updateTimer() {
   const m = String(Math.floor(timerSeconds / 60)).padStart(2,"0");
   const s = String(timerSeconds % 60).padStart(2,"0");
-  timerDisplay.textContent = `${m}:${s}`;
-}
+  globalTimer.textContent = `${m}:${s}`;
 
 /* ===================== RENDER ===================== */
 function render() {
