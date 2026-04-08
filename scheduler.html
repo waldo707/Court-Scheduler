@@ -281,15 +281,23 @@ function goToMenu(){
 }
 
 /* ===================== TIMER ===================== */
-function startTimer(){
-  if(timerInterval) return;
-  roundHeading.textContent="Next Round";
-  roundState="running";
-  timerInterval = setInterval(()=>{
+
+
+function startTimer() {
+  if (timerInterval) return;
+
+  // Switch UI context
+  roundState = "running";
+  roundHeading.textContent = "Next Round";
+
+  // Show NEXT round while timer runs
+  renderNextRoundPreview();
+
+  timerInterval = setInterval(() => {
     timerSeconds--;
     updateTimer();
-    if(timerSeconds<=0) stopTimer();
-  },1000);
+    if (timerSeconds <= 0) stopTimer();
+  }, 1000);
 }
 
 function stopTimer(){
@@ -329,6 +337,36 @@ function render(){
       </div>`;
   }
 }
+
+
+function renderNextRoundPreview() {
+  currentLeft.innerHTML = "";
+  currentRight.innerHTML = "";
+
+  const split = Math.ceil(nextRoundData.matches.length / 2);
+
+  nextRoundData.matches.forEach((m, i) => {
+    const html = `
+      <div class="matchup">
+        <div class="court-label">Court ${i + 1}</div>
+        <div>${renderTeam(m.teamA)}</div>
+        <div class="vs">vs</div>
+        <div>${renderTeam(m.teamB)}</div>
+      </div>
+    `;
+    (i < split ? currentLeft : currentRight).innerHTML += html;
+  });
+
+  if (nextRoundData.sittingOut.length) {
+    currentLeft.innerHTML += `
+      <div class="matchup">
+        <strong>Sitting out:</strong><br>
+        ${nextRoundData.sittingOut.join(", ")}
+      </div>
+    `;
+  }
+}
+
 </script>
 </body>
 </html>
