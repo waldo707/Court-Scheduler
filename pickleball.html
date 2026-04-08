@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pickleball Scheduler (Strict Sit-out Fairness)</title>
+<title>Pickleball Scheduler</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -12,7 +12,7 @@ body {
   background: #f4f4f4;
 }
 
-h1, h2, h3 { text-align: center; }
+h1, h2 { text-align: center; }
 
 label {
   display: block;
@@ -37,7 +37,6 @@ button {
 
 .secondary { background:#666; }
 
-/* Timer */
 .timer {
   font-size: 64px;
   font-weight: 800;
@@ -45,7 +44,6 @@ button {
   margin: 20px 0;
 }
 
-/* Match display */
 .matchup {
   background: white;
   padding: 12px;
@@ -53,15 +51,16 @@ button {
   margin: 10px 0;
   text-align: center;
 }
+
 .court-label {
   font-weight: 700;
 }
+
 .vs {
   opacity: 0.6;
   margin: 4px 0;
 }
 
-/* Columns */
 .round-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -80,9 +79,16 @@ button {
 <div id="menuView">
   <h1>Pickleball Scheduler</h1>
 
-  <label>Players (comma separated)</label>
-  <textarea id="playersInput" rows="3"
-    placeholder="1,2,3,4,5,6,7,8,9,10,11,12,13"></textarea>
+  <label>Number of Players</label>
+  <input id="playerCountInput" type="number" min="1" placeholder="e.g. 13">
+  <button onclick="generateNumberedPlayers()">Generate Player Numbers</button>
+
+  <label>Players</label>
+  <textarea id="playersInput" rows="3"></textarea>
+
+  <input id="playerActionInput" placeholder="Type player name">
+  <button onclick="addPlayer()">Add Player</button>
+  <button class="secondary" onclick="removePlayer()">Delete Player</button>
 
   <label>Courts</label>
   <input id="courtsInput" type="number" value="3" min="1">
@@ -130,12 +136,51 @@ let timerInterval = null;
 
 let currentRound = null;
 
-/* ===================== HELPERS ===================== */
+/* ===================== VIEW ===================== */
 function setView(v) {
   menuView.style.display = v === "menu" ? "block" : "none";
   roundView.style.display = v === "round" ? "block" : "none";
 }
 
+/* ===================== PLAYER TOOLS ===================== */
+function generateNumberedPlayers() {
+  const count = parseInt(playerCountInput.value, 10);
+  if (!count || count < 1) return alert("Enter a valid number.");
+  playersInput.value = Array.from({length: count}, (_, i) => i + 1).join(", ");
+}
+
+function addPlayer() {
+  const name = playerActionInput.value.trim();
+  if (!name) return;
+
+  const list = playersInput.value.split(",").map(p => p.trim()).filter(Boolean);
+  if (list.includes(name)) return alert("Player already exists.");
+
+  list.push(name);
+  playersInput.value = list.join(", ");
+  playerActionInput.value = "";
+
+  if (players.length) {
+    players.push(name);
+    playCount[name] = 0;
+    sitoutCount[name] = 0;
+  }
+}
+
+function removePlayer() {
+  const name = playerActionInput.value.trim();
+  if (!name) return;
+
+  players = players.filter(p => p !== name);
+  delete playCount[name];
+  delete sitoutCount[name];
+
+  const list = playersInput.value.split(",").map(p => p.trim()).filter(Boolean);
+  playersInput.value = list.filter(p => p !== name).join(", ");
+  playerActionInput.value = "";
+}
+
+/* ===================== HELPERS ===================== */
 function playersPerCourt() {
   return matchType === "singles" ? 2 : 4;
 }
@@ -148,18 +193,16 @@ function renderTeam(team) {
 function generateRound() {
   const slots = Math.min(players.length, courts * playersPerCourt());
 
-  // STRICT sit‑out fairness: order by total sit‑outs
   const ordered = [...players].sort((a, b) => {
     if (sitoutCount[a] !== sitoutCount[b]) {
       return sitoutCount[a] - sitoutCount[b];
     }
-    return playCount[a] - playCount[b]; // tie‑breaker
+    return playCount[a] - playCount[b];
   });
 
   const playing = ordered.slice(0, slots);
   const sittingOut = ordered.slice(slots);
 
-  // Update sit‑out counts
   sittingOut.forEach(p => sitoutCount[p]++);
 
   const matches = [];
@@ -187,10 +230,7 @@ function generateRound() {
 
 /* ===================== FLOW ===================== */
 function start() {
-  players = playersInput.value.split(",")
-    .map(p => p.trim())
-    .filter(Boolean);
-
+  players = playersInput.value.split(",").map(p => p.trim()).filter(Boolean);
   courts = parseInt(courtsInput.value, 10) || 1;
   matchType = matchTypeInput.value;
   timerMinutes = parseInt(timerMinutesInput.value, 10) || 8;
@@ -208,7 +248,6 @@ function start() {
 
   currentRound = generateRound();
   render();
-
   setView("round");
 }
 
@@ -232,9 +271,7 @@ function startTimer() {
   timerInterval = setInterval(() => {
     timerSeconds--;
     updateTimer();
-    if (timerSeconds <= 0) {
-      stopTimer();
-    }
+    if (timerSeconds <= 0) stopTimer();
   }, 1000);
 }
 
@@ -244,17 +281,15 @@ function stopTimer() {
 }
 
 function updateTimer() {
-  const m = String(Math.floor(timerSeconds / 60)).padStart(2, "0");
-  const s = String(timerSeconds % 60).padStart(2, "0");
+  const m = String(Math.floor(timerSeconds / 60)).padStart(2,"0");
+  const s = String(timerSeconds % 60).padStart(2,"0");
   timerDisplay.textContent = `${m}:${s}`;
 }
 
 /* ===================== RENDER ===================== */
 function render() {
-  const left = currentLeft;
-  const right = currentRight;
-  left.innerHTML = "";
-  right.innerHTML = "";
+  currentLeft.innerHTML = "";
+  currentRight.innerHTML = "";
 
   const split = Math.ceil(currentRound.matches.length / 2);
 
@@ -267,11 +302,11 @@ function render() {
         <div>${renderTeam(m.teamB)}</div>
       </div>
     `;
-    (i < split ? left : right).innerHTML += html;
+    (i < split ? currentLeft : currentRight).innerHTML += html;
   });
 
   if (currentRound.sittingOut.length) {
-    left.innerHTML += `
+    currentLeft.innerHTML += `
       <div class="matchup">
         <strong>Sitting out:</strong><br>
         ${currentRound.sittingOut.join(", ")}
