@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Court Scheduler</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: system-ui, Arial, sans-serif;
+  padding: 20px;
+  background: #f4f4f4;
+}
+
+h1, h2, h3 { text-align: center; }
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+textarea, input, select, button {
+  width: 100%;
+  font-size: 18px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+button {
+  background: #007acc;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  margin-top: 14px;
+}
+
+.secondary { background:#666; }
+
+/* Timer */
+.timer {
+  font-size: 64px;
+  font-weight: 800;
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* Match display */
+.matchup {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.court-label {
+  font-weight: 700;
+}
+
+.vs {
+  opacity:0.6;
+  margin:4px 0;
+}
+
+/* Columns */
+.round-columns {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+.round-col {
+  display:flex;
+  flex-direction:column;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== GLOBAL TIMER ===== -->
+<div id="globalTimer" class="timer">00:00</div>
+
+<!-- ===== MENU ===== -->
+<div id="menuView">
+  <h1>Court Scheduler</h1>
+
+  <label>Number of Players</label>
+  <input id="playerCountInput" type="number" min="1">
+  <button onclick="generateNumberedPlayers()">Generate Player Numbers</button>
+
+  <label>Players</label>
+  <textarea id="playersInput" rows="3"></textarea>
+
+  <input id="playerActionInput" placeholder="Type player name">
+  <button onclick="addPlayer()">Add Player</button>
+  <button class="secondary" onclick="removePlayer()">Delete Player</button>
+
+  <label>Courts</label>
+  <input id="courtsInput" type="number" value="3" min="1">
+
+  <label>Match Type</label>
+  <select id="matchTypeInput">
+    <option value="doubles" selected>Doubles</option>
+    <option value="singles">Singles</option>
+  </select>
+
+  <label>Match length (minutes)</label>
+  <input id="timerMinutesInput" type="number" value="8" min="1">
+
+  <button onclick="resumeSchedule()">Resume Schedule</button>
+  <button onclick="start()">Generate Schedule</button>
+</div>
+
+<!-- ===== ROUND VIEW ===== -->
+<div id="roundView" style="display:none;">
+  <h2 id="roundHeading">Current Round</h2>
+
+  <div id="currentRoundNames" class="round-columns">
+    <div id="currentLeft" class="round-col"></div>
+    <div id="currentRight" class="round-col"></div>
+  </div>
+
+  <button onclick="startTimer()">Start Timer</button>
+  <button onclick="nextRound()">Next Round</button>
+  <button class="secondary" onclick="goToMenu()">Back to Menu</button>
+</div>
+
+<script>
+/* ===================== STATE ===================== */
+let players = [];
+let courts = 1;
+let matchType = "doubles";
+
+let playCount = {};
+let sitoutCount = {};
+
+let timerMinutes = 8;
+let timerSeconds = 0;
+let timerInterval = null;
+
+let currentRound = null;
+let nextRoundData = null;
+let sessionActive = false;
+let roundState = "idle";
+
+/* ===================== VIEW ===================== */
+function setView(v){
+  menuView.style.display = v==="menu" ? "block" : "none";
+  roundView.style.display = v==="round" ? "block" : "none";
+  globalTimer.style.display = v==="menu" ? "none" : "block";
+}
+
+/* ===================== PLAYER TOOLS ===================== */
+function generateNumberedPlayers(){
+  const count = parseInt(playerCountInput.value,10);
+  if(!count || count<1) return alert("Enter a valid number.");
+  playersInput.value = Array.from({length:count},(_,i)=>i+1).join(", ");
+}
+
+function addPlayer(){
+  const name = playerActionInput.value.trim();
+  if(!name) return;
+
+  const list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  if(list.includes(name)) return alert("Already exists");
+
+  list.push(name);
+  playersInput.value = list.join(", ");
+  playerActionInput.value = "";
+
+  if(sessionActive){
+    players.push(name);
+    playCount[name]=0;
+    sitoutCount[name]=0;
+  }
+}
+
+function removePlayer(){
+  const name = playerActionInput.value.trim();
+  if(!name) return;
+
+  players = players.filter(p=>p!==name);
+  delete playCount[name];
+  delete sitoutCount[name];
+
+  const list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  playersInput.value = list.filter(p=>p!==name).join(", ");
+  playerActionInput.value="";
+}
+
+/* ===================== HELPERS ===================== */
+function playersPerCourt(){
+  return matchType==="singles" ? 2 : 4;
+}
+
+function renderTeam(team){
+  return team.length===1 ? team[0] : `${team[0]} & ${team[1]}`;
+}
+
+/* ===================== SCHEDULER ===================== */
+function generateRound(){
+  const slots = Math.min(players.length, courts * playersPerCourt());
+
+  const ordered = [...players].sort((a,b)=>{
+    if(sitoutCount[a]!==sitoutCount[b]) return sitoutCount[a]-sitoutCount[b];
+    return playCount[a]-playCount[b];
+  });
+
+  const playing = ordered.slice(0,slots);
+  const sittingOut = ordered.slice(slots);
+  sittingOut.forEach(p=>sitoutCount[p]++);
+
+  const matches=[];
+  const pool=[...playing];
+
+  while(pool.length>=playersPerCourt()){
+    if(matchType==="singles"){
+      const a=pool.shift(), b=pool.shift();
+      matches.push({teamA:[a],teamB:[b]});
+      playCount[a]++; playCount[b]++;
+    } else {
+      const a=pool.shift(), b=pool.shift(), c=pool.shift(), d=pool.shift();
+      matches.push({teamA:[a,b],teamB:[c,d]});
+      playCount[a]++; playCount[b]++; playCount[c]++; playCount[d]++;
+    }
+  }
+  return {matches,sittingOut};
+}
+
+/* ===================== FLOW ===================== */
+function start(){
+  players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  courts = parseInt(courtsInput.value,10)||1;
+  matchType = matchTypeInput.value;
+  timerMinutes = parseInt(timerMinutesInput.value,10)||8;
+
+  playCount={};
+  sitoutCount={};
+
+  players.forEach(p=>{
+    playCount[p]=0;
+    sitoutCount[p]=0;
+  });
+
+  timerSeconds = timerMinutes*60;
+  updateTimer();
+
+  currentRound = generateRound();
+  nextRoundData = generateRound();
+  sessionActive=true;
+  roundState="idle";
+  roundHeading.textContent="Current Round";
+
+  render();
+  setView("round");
+}
+
+function nextRound(){
+  stopTimer();
+  timerSeconds=timerMinutes*60;
+  updateTimer();
+
+  currentRound = nextRoundData;
+  nextRoundData = generateRound();
+  roundState="idle";
+  roundHeading.textContent="Current Round";
+
+  render();
+}
+
+function resumeSchedule(){
+  if(!sessionActive) return alert("No active schedule.");
+  setView("round");
+  render();
+}
+
+function goToMenu(){
+  stopTimer();
+  setView("menu");
+}
+
+/* ===================== TIMER ===================== */
+function startTimer(){
+  if(timerInterval) return;
+  roundHeading.textContent="Next Round";
+  roundState="running";
+  timerInterval = setInterval(()=>{
+    timerSeconds--;
+    updateTimer();
+    if(timerSeconds<=0) stopTimer();
+  },1000);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval);
+  timerInterval=null;
+}
+
+function updateTimer(){
+  const m=String(Math.floor(timerSeconds/60)).padStart(2,"0");
+  const s=String(timerSeconds%60).padStart(2,"0");
+  globalTimer.textContent=`${m}:${s}`;
+}
+
+/* ===================== RENDER ===================== */
+function render(){
+  currentLeft.innerHTML="";
+  currentRight.innerHTML="";
+
+  const split=Math.ceil(currentRound.matches.length/2);
+
+  currentRound.matches.forEach((m,i)=>{
+    const html=`
+      <div class="matchup">
+        <div class="court-label">Court ${i+1}</div>
+        <div>${renderTeam(m.teamA)}</div>
+        <div class="vs">vs</div>
+        <div>${renderTeam(m.teamB)}</div>
+      </div>`;
+    (i<split?currentLeft:currentRight).innerHTML+=html;
+  });
+
+  if(currentRound.sittingOut.length){
+    currentLeft.innerHTML+=`
+      <div class="matchup">
+        <strong>Sitting out:</strong><br>
+        ${currentRound.sittingOut.join(", ")}
+      </div>`;
+  }
+}
+</script>
+</body>
+</html>
+``
