@@ -205,9 +205,11 @@ function generateRound(){
     if(sitoutCount[a]!==sitoutCount[b]) return sitoutCount[a]-sitoutCount[b];
 
     // 🔑 deterministic rotation among equals
-    const ai = (players.indexOf(a)+roundNumber) % players.length;
-    const bi = (players.indexOf(b)+roundNumber) % players.length;
-    return ai-bi;
+   
+const ai = (sitoutCount[a] * players.length + roundNumber + players.indexOf(a)) % players.length;
+const bi = (sitoutCount[b] * players.length + roundNumber + players.indexOf(b)) % players.length;
+return ai - bi;
+
   });
 
   const playing = ordered.slice(0,slots);
