@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pickleball Scheduler</title>
+<title>Court Scheduler</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -77,7 +77,7 @@ button {
 
 <!-- ===== MENU ===== -->
 <div id="menuView">
-  <h1>Pickleball Scheduler</h1>
+  <h1>Court Scheduler</h1>
 
   <label>Number of Players</label>
   <input id="playerCountInput" type="number" min="1" placeholder="e.g. 13">
@@ -102,6 +102,7 @@ button {
   <label>Match length (minutes)</label>
   <input id="timerMinutesInput" type="number" value="8" min="1">
 
+  <button onclick="resumeSchedule()">Resume Schedule</button>
   <button onclick="start()">Generate Schedule</button>
 </div>
 
@@ -135,6 +136,8 @@ let timerSeconds = 0;
 let timerInterval = null;
 
 let currentRound = null;
+let nextRoundData = null;
+let sessionActive = false;
 
 /* ===================== VIEW ===================== */
 function setView(v) {
@@ -160,7 +163,7 @@ function addPlayer() {
   playersInput.value = list.join(", ");
   playerActionInput.value = "";
 
-  if (players.length) {
+  if (sessionActive) {
     players.push(name);
     playCount[name] = 0;
     sitoutCount[name] = 0;
@@ -193,6 +196,7 @@ function renderTeam(team) {
 function generateRound() {
   const slots = Math.min(players.length, courts * playersPerCourt());
 
+  // STRICT sit‑out fairness
   const ordered = [...players].sort((a, b) => {
     if (sitoutCount[a] !== sitoutCount[b]) {
       return sitoutCount[a] - sitoutCount[b];
@@ -247,6 +251,9 @@ function start() {
   updateTimer();
 
   currentRound = generateRound();
+  nextRoundData = generateRound();
+  sessionActive = true;
+
   render();
   setView("round");
 }
@@ -256,7 +263,15 @@ function nextRound() {
   timerSeconds = timerMinutes * 60;
   updateTimer();
 
-  currentRound = generateRound();
+  currentRound = nextRoundData;
+  nextRoundData = generateRound();
+
+  render();
+}
+
+function resumeSchedule() {
+  if (!sessionActive) return alert("No active schedule.");
+  setView("round");
   render();
 }
 
@@ -317,4 +332,3 @@ function render() {
 </script>
 </body>
 </html>
-``
