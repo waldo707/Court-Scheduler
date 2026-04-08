@@ -198,41 +198,85 @@ function removePlayer(){
 }
 
 /* ===================== SCHEDULER ===================== */
-function generateRound(){
-  const slots = Math.min(players.length, courts*playersPerCourt());
+function generateRound() {
+  const slots = Math.min(players.length, courts * playersPerCourt());
+  const sitoutsNeeded = players.length - slots;
 
-  const ordered = [...players].sort((a,b)=>{
-    if(sitoutCount[a]!==sitoutCount[b]) return sitoutCount[a]-sitoutCount[b];
-
-    // 🔑 deterministic rotation among equals
-   
-const ai = (sitoutCount[a] * players.length + roundNumber + players.indexOf(a)) % players.length;
-const bi = (sitoutCount[b] * players.length + roundNumber + players.indexOf(b)) % players.length;
-return ai - bi;
-
+  // 1. Group players by total sit-outs (fairness)
+  const groups = {};
+  players.forEach(p => {
+    const c = sitoutCount[p] || 0;
+    if (!groups[c]) groups[c] = [];
+    groups[c].push(p);
   });
 
-  const playing = ordered.slice(0,slots);
-  const sittingOut = ordered.slice(slots);
+  // Sort group keys (fewest sit-outs first)
+  const counts = Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => a - b);
 
-  sittingOut.forEach(p=>sitoutCount[p]++);
+  let playing = [];
+  let sittingOut = [];
 
-  const pool=[...playing];
-  const matches=[];
+  // 2. Fill playing slots fairly, rotating sit-outs
+  let needed = slots;
+  let rotationIndex = roundNumber % players.length;
 
-  while(pool.length>=playersPerCourt()){
-    if(matchType==="singles"){
-      const a=pool.shift(), b=pool.shift();
-      matches.push({teamA:[a],teamB:[b]});
-      playCount[a]++; playCount[b]++;
+  for (const count of counts) {
+    const group = groups[count];
+
+    if (needed >= group.length) {
+      // Everyone in this group plays
+      playing.push(...group);
+      needed -= group.length;
     } else {
-      const a=pool.shift(), b=pool.shift(), c=pool.shift(), d=pool.shift();
-      matches.push({teamA:[a,b],teamB:[c,d]});
-      playCount[a]++; playCount[b]++; playCount[c]++; playCount[d]++;
+      // Some play, some sit out — rotate WHO sits out
+      const rotated = [
+        ...group.slice(rotationIndex),
+        ...group.slice(0, rotationIndex)
+      ];
+
+      playing.push(...rotated.slice(0, needed));
+      sittingOut.push(...rotated.slice(needed));
+      needed = 0;
+      break;
     }
   }
 
-  return {matches, sittingOut};
+  // Any leftover players sit out
+  players.forEach(p => {
+    if (!playing.includes(p) && !sittingOut.includes(p)) {
+      sittingOut.push(p);
+    }
+  });
+
+  // 3. Update sit-out counters
+  sittingOut.forEach(p => {
+    sitoutCount[p]++;
+  });
+
+  // 4. Create matches
+  const matches = [];
+  const pool = [...playing];
+
+  while (pool.length >= playersPerCourt()) {
+    if (matchType === "singles") {
+      const a = pool.shift();
+      const b = pool.shift();
+      matches.push({ teamA: [a], teamB: [b] });
+      playCount[a]++; playCount[b]++;
+    } else {
+      const a = pool.shift();
+      const b = pool.shift();
+      const c = pool.shift();
+      const d = pool.shift();
+      matches.push({ teamA: [a, b], teamB: [c, d] });
+      playCount[a]++; playCount[b]++;
+      playCount[c]++; playCount[d]++;
+    }
+  }
+
+  return { matches, sittingOut };
 }
 
 /* ===================== FLOW ===================== */
