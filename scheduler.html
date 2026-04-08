@@ -228,6 +228,20 @@ function generateRound(){
   return {matches,sittingOut};
 }
 
+
+function peekNextRound() {
+  // copy sitoutCount so we don't mutate real state
+  const backupSitouts = { ...sitoutCount };
+
+  const next = generateRound();
+
+  // restore sitoutCount so current round stays correct
+  sitoutCount = backupSitouts;
+
+  return next;
+}
+
+
 /* ===================== FLOW ===================== */
 function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
@@ -247,7 +261,7 @@ function start(){
   updateTimer();
 
   currentRound = generateRound();
-  nextRoundData = generateRound();
+  nextRoundData = peekNextRound();
   sessionActive=true;
   roundState="idle";
   roundHeading.textContent="Current Round";
@@ -256,15 +270,20 @@ function start(){
   setView("round");
 }
 
-function nextRound(){
+
+function nextRound() {
   stopTimer();
-  timerSeconds=timerMinutes*60;
+  timerSeconds = timerMinutes * 60;
   updateTimer();
 
+  // promote preview → current
   currentRound = nextRoundData;
-  nextRoundData = generateRound();
-  roundState="idle";
-  roundHeading.textContent="Current Round";
+
+  // generate a NEW preview
+  nextRoundData = peekNextRound();
+
+  roundState = "idle";
+  roundHeading.textContent = "Current Round";
 
   render();
 }
@@ -291,7 +310,7 @@ function startTimer() {
   roundHeading.textContent = "Next Round";
 
   // Show NEXT round while timer runs
-  renderNextRoundPreview();
+   render();
 
   timerInterval = setInterval(() => {
     timerSeconds--;
@@ -312,29 +331,12 @@ function updateTimer(){
 }
 
 /* ===================== RENDER ===================== */
-function render(){
-  currentLeft.innerHTML="";
-  currentRight.innerHTML="";
 
-  const split=Math.ceil(currentRound.matches.length/2);
-
-  currentRound.matches.forEach((m,i)=>{
-    const html=`
-      <div class="matchup">
-        <div class="court-label">Court ${i+1}</div>
-        <div>${renderTeam(m.teamA)}</div>
-        <div class="vs">vs</div>
-        <div>${renderTeam(m.teamB)}</div>
-      </div>`;
-    (i<split?currentLeft:currentRight).innerHTML+=html;
-  });
-
-  if(currentRound.sittingOut.length){
-    currentLeft.innerHTML+=`
-      <div class="matchup">
-        <strong>Sitting out:</strong><br>
-        ${currentRound.sittingOut.join(", ")}
-      </div>`;
+function render() {
+  if (roundState === "running") {
+    renderRound(nextRoundData);
+  } else {
+    renderRound(currentRound);
   }
 }
 
@@ -366,6 +368,35 @@ function renderNextRoundPreview() {
     `;
   }
 }
+
+function renderRound(round) {
+  currentLeft.innerHTML = "";
+  currentRight.innerHTML = "";
+
+  const split = Math.ceil(round.matches.length / 2);
+
+  round.matches.forEach((m, i) => {
+    const html = `
+      <div class="matchup">
+        <div class="court-label">Court ${i + 1}</div>
+        <div>${renderTeam(m.teamA)}</div>
+        <div class="vs">vs</div>
+        <div>${renderTeam(m.teamB)}</div>
+      </div>
+    `;
+    (i < split ? currentLeft : currentRight).innerHTML += html;
+  });
+
+  if (round.sittingOut.length) {
+    currentLeft.innerHTML += `
+      <div class="matchup">
+        <strong>Sitting out:</strong><br>
+        ${round.sittingOut.join(", ")}
+      </div>
+    `;
+  }
+}
+
 
 </script>
 </body>
