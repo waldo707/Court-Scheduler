@@ -297,9 +297,14 @@ function start(){
   timerSeconds = timerMinutes*60;
   updateTimer();
 
-  currentRound = generateRound();
-  roundNumber++;
-  nextRoundData = generateRound();
+  
+roundNumber = 0;                    // ✅ reset round counter
+
+currentRound = generateRound();
+
+roundNumber++;                      // ✅ advance state
+nextRoundData = generateRound();    // ✅ preview from future state
+
 
   sessionActive=true;
   roundState="idle";
