@@ -298,21 +298,14 @@ function start(){
   updateTimer();
 
   
-roundNumber = 0;                    // ✅ reset round counter
+roundNumber = 0;
 
 currentRound = generateRound();
+roundNumber++;
 
-roundNumber++;                      // ✅ advance state
-nextRoundData = generateRound();    // ✅ preview from future state
-
-
-  sessionActive=true;
-  roundState="idle";
-  roundHeading.textContent="Current Round";
-
-  render();
-  setView("round");
-}
+const snap = snapshotState();
+nextRoundData = generateRound();
+restoreState(snap);
 
 function startTimer(){
   if(timerInterval) return;
@@ -326,6 +319,20 @@ function startTimer(){
     updateTimer();
     if(timerSeconds<=0) stopTimer();
   },1000);
+}
+
+function snapshotState() {
+  return {
+    playCount: structuredClone(playCount),
+    sitoutCount: structuredClone(sitoutCount),
+    roundNumber
+  };
+}
+
+function restoreState(s) {
+  playCount = s.playCount;
+  sitoutCount = s.sitoutCount;
+  roundNumber = s.roundNumber;
 }
 
 function nextRound(){
