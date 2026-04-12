@@ -472,9 +472,16 @@ if (timerSeconds <= 0) {
   stopTimer();
 
   // ✅ Audible alarm (works everywhere)
-  playAlarmBeep();
+ 
+playAlarmBeep();
 
+ if (navigator.vibrate) {
+    navigator.vibrate([400, 200, 400, 200, 400]);
+  }
+
+setTimeout(() => {
   alert("Time!");
+}, 100);
   return;
 }
 
