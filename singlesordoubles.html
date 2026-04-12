@@ -106,6 +106,7 @@ let courts = 1;
 let sessionActive = false;
 let nextMatches = null;
 let resumeTimerSeconds = null;
+let showNextPreview = false;
 
 
 let playCount = {};
@@ -396,6 +397,8 @@ stopTimer();
   currentMatches = nextMatches;
   nextMatches = generateRound();
 
+ showNextPreview = false; // ✅ back to normal
+
   render();
 }
 
@@ -426,6 +429,14 @@ function goToMenu() {
 
 // ================= TIMER =================
 function startTimer() {
+
+
+ // ✅ Switch display to NEXT round preview
+  if (nextMatches) {
+    showNextPreview = true;
+    render();
+  }
+
   if (timerInterval) return;
   timerInterval = setInterval(()=>{
     if (timerSeconds <= 0) {
@@ -456,6 +467,10 @@ function updateTimer() {
 // ================= RENDER =================
 function render() {
   updateTimer();
+
+const matchesToShow =
+    showNextPreview && nextMatches ? nextMatches : currentMatches;
+
   roundMatches.innerHTML = currentMatches.map((m,i)=>`
     <div class="matchup">
       <div class="court-label">Court ${i+1}</div>
