@@ -196,17 +196,33 @@ function addPlayer() {
   playerActionInput.value = "";
 
   // ✅ If a session is active, add player LIVE
-  if (sessionActive) {
-    players.push(name);
+ 
+if (sessionActive) {
+  players.push(name);
 
-    playCount[name] = 0;
-    sitoutStreak[name] = 0;
-    hasSatOut[name] = false;
-    partnerCount[name] = {};
+  const existingPlayers = players.filter(p => p !== name);
 
-    // Optional: regenerate NEXT round only
-    nextMatches = generateRound();
-  }
+  const avgPlayCount =
+    existingPlayers.reduce((sum, p) => sum + playCount[p], 0) /
+    existingPlayers.length;
+
+  const avgSitoutStreak =
+    existingPlayers.reduce((sum, p) => sum + sitoutStreak[p], 0) /
+    existingPlayers.length;
+
+  // ✅ Slightly favor new players (tunable bias)
+  playCount[name] = Math.max(0, Math.floor(avgPlayCount - 1));
+  sitoutStreak[name] = Math.max(0, Math.floor(avgSitoutStreak - 0.5));
+
+  // ✅ CRITICAL: prevent "never sat" immunity
+  hasSatOut[name] = true;
+
+  partnerCount[name] = {};
+
+  // ✅ Regenerate NEXT round only
+  nextMatches = generateRound();
+}
+
 }
 
 
