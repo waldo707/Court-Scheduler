@@ -164,16 +164,26 @@ function createPlayersFromNumber() {
   }
 }
 
+
 function addPlayer() {
   const name = playerActionInput.value.trim();
   if (!name) return;
 
-  let list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  let list = playersInput.value.split(",").map(p => p.trim()).filter(Boolean);
   if (list.includes(name)) return alert("Player already exists.");
 
   list.push(name);
   playersInput.value = list.join(", ");
   playerActionInput.value = "";
+
+  // ✅ If session is active, add player live
+  if (sessionActive) {
+    players.push(name);
+    playCount[name] = 0;
+    sitoutStreak[name] = 0;
+    hasSatOut[name] = false;
+    partnerCount[name] = {};
+  }
 }
 
 function removePlayer() {
