@@ -451,14 +451,12 @@ function startTimer() {
 
   timerInterval = setInterval(() => {
    
+
 if (timerSeconds <= 0) {
   stopTimer();
 
-  const alarm = document.getElementById("alarmSound");
-  if (alarm) {
-    alarm.currentTime = 0;
-    alarm.play().catch(() => { /* browser blocked autoplay */ });
-  }
+  // ✅ Audible alarm (works everywhere)
+  playAlarmBeep();
 
   alert("Time!");
   return;
@@ -513,11 +511,32 @@ function render() {
     </div>
   `).join("");
 }
+
+function playAlarmBeep(duration = 1.2, frequency = 1000, volume = 0.4) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = "square";       // louder than sine
+    oscillator.frequency.value = frequency;
+    gain.gain.value = volume;
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + duration);
+
+  } catch (e) {
+    console.warn("Web Audio not supported", e);
+  }
+}
+
 </script>
 
-<audio id="alarmSound" preload="auto">
-  <source src="alarm.mp3" type="audio/mpeg">
-</audio>
 
 </body>
 </html>
