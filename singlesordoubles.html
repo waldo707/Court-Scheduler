@@ -428,17 +428,20 @@ function goToMenu() {
 
 
 // ================= TIMER =================
+
 function startTimer() {
+  if (timerInterval) return;
 
-
- // ✅ Switch display to NEXT round preview
-  if (nextMatches) {
-    showNextPreview = true;
-    render();
+  // ✅ Ensure next round exists
+  if (!nextMatches) {
+    nextMatches = generateRound();
   }
 
-  if (timerInterval) return;
-  timerInterval = setInterval(()=>{
+  // ✅ Switch display to NEXT round preview
+  showNextPreview = true;
+  render();
+
+  timerInterval = setInterval(() => {
     if (timerSeconds <= 0) {
       stopTimer();
       alert("Time!");
@@ -446,7 +449,7 @@ function startTimer() {
     }
     timerSeconds--;
     updateTimer();
-  },1000);
+  }, 1000);
 }
 
 function pauseTimer() {
