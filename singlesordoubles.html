@@ -105,6 +105,7 @@ button {
 </div>
 
 <script>
+let audioCtx = null;
 // ================= STATE =================
 let players = [];
 let matchType = "doubles";
@@ -438,6 +439,21 @@ function goToMenu() {
 // ================= TIMER =================
 
 function startTimer() {
+
+  // 🔑 iPhone / PC audio unlock (MUST be here)
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+  }
+
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+
+  if (timerInterval) return;
+
+  // existing code continues below…
+
   if (timerInterval) return;
 
   // ✅ Ensure next round exists
@@ -481,6 +497,24 @@ function updateTimer() {
   const s = String(timerSeconds%60).padStart(2,"0");
   timerDisplay.textContent = `${m}:${s}`;
 }
+
+function playAlarmBeep() {
+  if (!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "square";
+  osc.frequency.value = 1000;
+  gain.gain.value = 0.4;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.2);
+}
+
 
 // ================= RENDER =================
 
