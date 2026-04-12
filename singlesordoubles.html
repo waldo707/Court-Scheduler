@@ -203,14 +203,76 @@ function generateRound() {
     return matches;
   }
 
-  let pool = [...playing];
-  while (pool.length >= 4) {
-    const [a,b,c,d] = pool.splice(0,4);
-    playCount[a]++; playCount[b]++; playCount[c]++; playCount[d]++;
-    matches.push({teamA:[a,b], teamB:[c,d]});
+ 
+// ---------- DOUBLES (FAIR + RANDOMIZED) ----------
+let matches = [];
+let pool = [...playing].sort(() => Math.random() - 0.5);
+
+while (pool.length >= 4) {
+  let bestCombo = null;
+  let bestScore = Infinity;
+
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = i + 1; j < pool.length; j++) {
+      for (let k = 0; k < pool.length; k++) {
+        for (let l = k + 1; l < pool.length; l++) {
+
+          if (new Set([i,j,k,l]).size < 4) continue;
+
+          const a = pool[i], b = pool[j];
+          const c = pool[k], d = pool[l];
+
+          // Partner repeat penalty
+          const partnerPenalty =
+            (partnerCount[a][b] || 0) +
+            (partnerCount[c][d] || 0);
+
+          // Balance penalty
+          const minCount = Math.min(
+            playCount[a], playCount[b],
+            playCount[c], playCount[d]
+          );
+
+          const balancePenalty =
+            (playCount[a] - minCount) +
+            (playCount[b] - minCount) +
+            (playCount[c] - minCount) +
+            (playCount[d] - minCount);
+
+          const score = partnerPenalty * 10 + balancePenalty;
+
+          if (score < bestScore) {
+            bestScore = score;
+            bestCombo = [a, b, c, d];
+          }
+        }
+      }
+    }
   }
-  return matches;
+
+  const [a, b, c, d] = bestCombo;
+
+  matches.push({
+    teamA: [a, b],
+    teamB: [c, d]
+  });
+
+  // Update state
+  partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+  partnerCount[b][a] = partnerCount[a][b];
+  partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
+  partnerCount[d][c] = partnerCount[c][d];
+
+  playCount[a]++;
+  playCount[b]++;
+  playCount[c]++;
+  playCount[d]++;
+
+  pool = pool.filter(p => ![a, b, c, d].includes(p));
 }
+
+return matches;
+
 
 // ================= FLOW =================
 function start() {
