@@ -86,8 +86,15 @@ button {
 
 <!-- ===== ROUND VIEW ===== -->
 <div id="roundView" style="display:none;">
-  <h2>Current Round</h2>
-  <div id="roundMatches"></div>
+  
+<h2>Current Round</h2>
+<div id="currentRoundMatches"></div>
+
+<hr style="margin:30px 0;">
+
+<h2>Next Round</h2>
+<div id="nextRoundMatches"></div>
+
 
 
 
@@ -380,7 +387,7 @@ function start() {
   timerSeconds = parseInt(timerMinutesInput.value)*60;
 
   currentMatches = generateRound();
-nextMatches = generateRound();
+nextMatches = null;   // ✅ not generated yet
 sessionActive = true;
 
   render();
@@ -395,9 +402,7 @@ stopTimer();
   timerSeconds = parseInt(timerMinutesInput.value, 10) * 60;
 
   currentMatches = nextMatches;
-  nextMatches = generateRound();
-
- showNextPreview = false; // ✅ back to normal
+  nextMatches = null;
 
   render();
 }
@@ -469,18 +474,27 @@ function updateTimer() {
 
 // ================= RENDER =================
 
+
 function render() {
   updateTimer();
 
-  const matchesToShow =
-    showNextPreview && nextMatches ? nextMatches : currentMatches;
+  // ✅ Ensure next round exists for display
+  if (!nextMatches) {
+    nextMatches = generateRound();
+  }
 
-  roundMatches.innerHTML = matchesToShow.map((m, i) => `
+  currentRoundMatches.innerHTML = currentMatches.map((m, i) => `
     <div class="matchup">
-      <div class="court-label">
-        Court ${i + 1}
-        ${showNextPreview ? " (Next Round)" : ""}
-      </div>
+      <div class="court-label">Court ${i + 1}</div>
+      <div class="team">${formatTeam(m.teamA)}</div>
+      <div class="vs">vs</div>
+      <div class="team">${formatTeam(m.teamB)}</div>
+    </div>
+  `).join("");
+
+  nextRoundMatches.innerHTML = nextMatches.map((m, i) => `
+    <div class="matchup" style="opacity:0.7;">
+      <div class="court-label">Court ${i + 1}</div>
       <div class="team">${formatTeam(m.teamA)}</div>
       <div class="vs">vs</div>
       <div class="team">${formatTeam(m.teamB)}</div>
