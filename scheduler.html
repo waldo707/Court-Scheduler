@@ -108,6 +108,15 @@ button {
 <div id="menuView">
   <h1>Court Scheduler</h1>
 
+<!-- ✅ QUICK PLAYER GENERATION -->
+<label>Number of Players</label>
+<input id="numPlayersInput" type="number" min="1" placeholder="e.g. 12">
+
+<button class="secondary" onclick="createPlayersFromNumber()">
+  Create Players
+</button>
+
+
   <label>Players</label>
 <textarea id="playersInput" rows="3"
   placeholder="Brian, Mike, Sherry, Sue"></textarea>
@@ -118,13 +127,6 @@ button {
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
 
 
-<!-- ✅ QUICK PLAYER GENERATION -->
-<label>Number of Players</label>
-<input id="numPlayersInput" type="number" min="1" placeholder="e.g. 12">
-
-<button class="secondary" onclick="createPlayersFromNumber()">
-  Create Players
-</button>
 
 
   <label>Courts</label>
