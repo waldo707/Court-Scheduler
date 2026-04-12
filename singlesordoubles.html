@@ -468,19 +468,24 @@ function updateTimer() {
 }
 
 // ================= RENDER =================
+
 function render() {
   updateTimer();
 
-const matchesToShow =
+  const matchesToShow =
     showNextPreview && nextMatches ? nextMatches : currentMatches;
 
-  roundMatches.innerHTML = currentMatches.map((m,i)=>`
+  roundMatches.innerHTML = matchesToShow.map((m, i) => `
     <div class="matchup">
-      <div class="court-label">Court ${i+1}</div>
+      <div class="court-label">
+        Court ${i + 1}
+        ${showNextPreview ? " (Next Round)" : ""}
+      </div>
       <div class="team">${formatTeam(m.teamA)}</div>
       <div class="vs">vs</div>
       <div class="team">${formatTeam(m.teamB)}</div>
-    </div>`).join("");
+    </div>
+  `).join("");
 }
 </script>
 </body>
