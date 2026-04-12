@@ -199,20 +199,43 @@ function addPlayer() {
   }
 }
 
+
 function removePlayer() {
   const name = playerActionInput.value.trim();
   if (!name) return;
 
-  let list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
-  if (!list.includes(name)) return alert("Player not found.");
+  let list = playersInput.value
+    .split(",")
+    .map(p => p.trim())
+    .filter(Boolean);
 
-  list = list.filter(p=>p!==name);
+  if (!list.includes(name)) {
+    alert("Player not found.");
+    return;
+  }
+
+  // ✅ Update textarea
+  list = list.filter(p => p !== name);
   playersInput.value = list.join(", ");
+  playerActionInput.value = "";
 
-  delete playCount[name];
-  delete sitoutStreak[name];
-  delete hasSatOut[name];
-  delete partnerCount[name];
+  // ✅ If session is active, remove player LIVE
+  if (sessionActive) {
+    players = players.filter(p => p !== name);
+
+    delete playCount[name];
+    delete sitoutStreak[name];
+    delete hasSatOut[name];
+    delete partnerCount[name];
+
+    // ✅ Remove from everyone else's partner history
+    for (const p in partnerCount) {
+      delete partnerCount[p][name];
+    }
+
+    // ✅ Regenerate NEXT round only
+    nextMatches = generateRound();
+  }
 }
 
 // ================= SCHEDULING =================
