@@ -106,7 +106,7 @@ button {
 
 <!-- ===== MAIN MENU ===== -->
 <div id="menuView">
-  <h1>Pickleball Scheduler</h1>
+  <h1>Court Scheduler</h1>
 
   <label>Players</label>
 <textarea id="playersInput" rows="3"
@@ -116,6 +116,16 @@ button {
 
 <button onclick="addPlayer()">Add Player</button>
 <button class="secondary" onclick="removePlayer()">Delete Player</button><label>Players</label>
+
+
+<!-- ✅ QUICK PLAYER GENERATION -->
+<label>Number of Players</label>
+<input id="numPlayersInput" type="number" min="1" placeholder="e.g. 12">
+
+<button class="secondary" onclick="createPlayersFromNumber()">
+  Create Players
+</button>
+
 
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
@@ -208,6 +218,35 @@ function setView(v){
   roundView.style.display = v==="round" ? "block" : "none";
   runningView.style.display = v==="running" ? "block" : "none";
 }
+
+
+function createPlayersFromNumber() {
+  const count =
+    parseInt(document.getElementById("numPlayersInput").value, 10);
+
+  if (!count || count < 1) {
+    alert("Please enter a valid number of players.");
+    return;
+  }
+
+  // Generate numeric player names: 1, 2, 3, ...
+  const generatedPlayers = Array.from(
+    { length: count },
+    (_, i) => String(i + 1)
+  );
+
+  // Update the textarea
+  playersInput.value = generatedPlayers.join(", ");
+
+  // Warn if session is already active
+  if (sessionActive) {
+    alert(
+      "Players list updated.\n\n" +
+      "Click 'Generate Schedule (Start Over)' to apply changes."
+    );
+  }
+}
+
 /* ===================== ADD PLAYER ===================== */
 function addPlayer() {
   const name = playerActionInput.value.trim();
