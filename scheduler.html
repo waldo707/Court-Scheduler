@@ -194,6 +194,7 @@ const timerDisplayRunning = document.getElementById("timerDisplayRunning");
 
 let players = [], courts = 1;
 let playCount = {}, sitoutStreak = {}, partnerCount = {};
+let hasSatOut = {};  //
 
 let currentRound = null, nextRoundData = null;
 let roundState = "idle";
@@ -281,7 +282,7 @@ function addPlayer() {
   const counts = Object.values(playCount);
   const minPlayCount = counts.length ? Math.min(...counts) : 0;
 
-  playCount[name] = minPlayCount - 1;
+  playCount[name] = minPlayCount - 1; hasSatOut[name] = false;
   sitoutStreak[name] = 0;
   partnerCount[name] = {};
 
@@ -363,6 +364,7 @@ function removePlayer() {
   delete playCount[removedName];
   delete sitoutStreak[removedName];
   delete partnerCount[removedName];
+hasSatOut[name] = false;
 
   console.log(`Player "${removedName}" removed from active session`);
 }
@@ -665,8 +667,18 @@ document.getElementById("courtsInput").value = courts;
 
   timerMinutes = parseInt(timerMinutesInput.value,10)||8;
 
-  playCount={}; sitoutStreak={}; partnerCount={};
+  playCount={}; sitoutStreak={}; partnerCount={}; hasSatOut = {}; 
   timerSeconds = timerMinutes*60;
+
+
+ // ✅ INITIALIZE PER-PLAYER STATE (THIS WAS MISSING)
+  players.forEach(p => {
+    playCount[p] = 0;
+    sitoutStreak[p] = 0;
+    partnerCount[p] = {};
+    hasSatOut[p] = false;   // ✅ REQUIRED
+  });
+
   roundState="idle";
 
   sessionActive = true; 
