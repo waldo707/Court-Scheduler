@@ -109,6 +109,7 @@ button {
 let players = [];
 let matchType = "doubles";
 let courts = 1;
+let maxCourts = 1;
 
 let sessionActive = false;
 let nextMatches = null;
@@ -260,6 +261,8 @@ function selectSitouts(players, slots) {
 }
 
 function generateRound() {
+courts = calculateCourts(players.length, maxCourts);
+if (courts === 0) return [];
   const slots = courts * playersPerCourt();
   let matches = []; // ✅ DECLARED ONCE
 
@@ -380,7 +383,7 @@ function start() {
   }
 
   matchType = document.querySelector("input[name='matchType']:checked").value;
-  courts = calculateCourts(players.length, parseInt(courtsInput.value));
+ maxCourts = parseInt(courtsInput.value, 10);
 
   playCount = {}; sitoutStreak = {}; hasSatOut = {}; partnerCount = {};
 
