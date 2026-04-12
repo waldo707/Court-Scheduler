@@ -128,6 +128,18 @@ button {
 
 
 
+<label>Match Type</label>
+<div>
+  <label>
+    <input type="radio" name="matchType" value="doubles" checked>
+    Doubles
+  </label>
+  <label style="margin-left:16px;">
+    <input type="radio" name="matchType" value="singles">
+    Singles
+  </label>
+</div>
+
 
   <label>Courts</label>
   <input id="courtsInput" type="number" min="1" value="1">
@@ -192,6 +204,7 @@ const timerDisplayRunning = document.getElementById("timerDisplayRunning");
 
 /* ===================== STATE ===================== */
 
+let matchType = "doubles"; // or "singles"
 let players = [], courts = 1;
 let playCount = {}, sitoutStreak = {}, partnerCount = {};
 let hasSatOut = {};  //
@@ -515,7 +528,7 @@ function balanceWeight() {
 
 function generateRound() {
   const MAX_SITOUT = 2;
-  const slots = courts * 4;
+  const slots = courts *
 
   // Ensure state exists
   players.forEach(p => {
@@ -576,10 +589,35 @@ function generateRound() {
     }
   });
 
-  /* --------------------------------------------------
-     STEP 4: Pair players (UNCHANGED LOGIC)
-     -------------------------------------------------- */
+ 
+/* --------------------------------------------------
+   STEP 4: Pair players (SINGLES or DOUBLES)
+   -------------------------------------------------- */
+
+if (matchType === "singles") {
   let matches = [];
+  let pool = [...playing];
+
+  while (pool.length >= 2) {
+    const a = pool.shift();
+    const b = pool.shift();
+
+    matches.push({
+      teamA: [a],
+      teamB: [b]
+    });
+
+    playCount[a]++;
+    playCount[b]++;
+  }
+
+  return { matches };
+}
+ 
+
+/* ===== DOUBLES LOGIC (YOUR EXISTING CODE, UNCHANGED) ===== */
+
+ let matches = [];
   let pool = [...playing];
 
   while (pool.length >= 4) {
@@ -657,6 +695,10 @@ const score = partnerScore + balanceScore;
 /* ===================== FLOW ===================== */
 function start(){
   players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+
+matchType =
+  document.querySelector('input[name="matchType"]:checked').value;
+
   
 const requestedCourts = parseInt(document.getElementById("courtsInput").value);
 
@@ -690,6 +732,11 @@ roundNumber = 1;
   render();
   setView("round");
 }
+
+function playersPerCourt() {
+  return matchType === "singles" ? 2 : 4;
+}
+
 
 
 function resumeSchedule() {
