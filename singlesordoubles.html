@@ -236,7 +236,7 @@ function generateRound() {
       playCount[b]++;
     }
 
-    return { matches };
+   return matches;
   }
 
   /* ===================== DOUBLES ===================== */
@@ -302,7 +302,7 @@ function generateRound() {
     pool = pool.filter(p => ![a, b, c, d].includes(p));
   }
 
-  return { matches };
+ return matches;
 }
 
 // ================= FLOW =================
