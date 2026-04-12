@@ -49,6 +49,8 @@ button {
 
 <body>
 
+  <div id="timerDisplay" class="timer">00:00</div>
+
 <!-- ===== MENU ===== -->
 <div id="menuView">
   <h1>Court Scheduler</h1>
@@ -87,7 +89,7 @@ button {
   <h2>Current Round</h2>
   <div id="roundMatches"></div>
 
-  <div id="timerDisplay" class="timer">00:00</div>
+
 
   <button onclick="startTimer()">Start Timer</button>
   <button onclick="pauseTimer()">Pause</button>
@@ -370,19 +372,11 @@ function resumeSchedule() {
 }
 
 
-
-
 function goToMenu() {
-  if (timerInterval) {
-    resumeTimerSeconds = timerSeconds;
-    stopTimer();
-  } else {
-    resumeTimerSeconds = null;
-  }
-
   roundView.style.display = "none";
   menuView.style.display = "block";
 }
+
 
 // ================= TIMER =================
 function startTimer() {
