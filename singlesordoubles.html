@@ -120,10 +120,26 @@ function formatTeam(t) {
 }
 
 // ================= PLAYER MANAGEMENT =================
+
 function createPlayersFromNumber() {
-  const n = parseInt(numPlayersInput.value);
-  if (!n || n < 1) return;
-  playersInput.value = Array.from({length:n},(_,i)=>i+1).join(", ");
+  // Always fetch the input from the DOM safely
+  const input = document.getElementById("numPlayersInput");
+  const n = parseInt(input.value, 10);
+
+  if (!Number.isInteger(n) || n < 1) {
+    alert("Please enter a valid number of players.");
+    return;
+  }
+
+  // Create numeric player names: 1, 2, 3, ...
+  const players = Array.from(
+    { length: n },
+    (_, i) => String(i + 1)
+  );
+
+  // Populate the Players textarea
+  document.getElementById("playersInput").value =
+    players.join(", ");
 }
 
 function addPlayer() {
