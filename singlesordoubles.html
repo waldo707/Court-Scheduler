@@ -74,7 +74,12 @@ button {
   <label>Match Length (minutes)</label>
   <input id="timerMinutesInput" type="number" min="1" value="8">
 
-  <button onclick="start()">Generate Schedule</button>
+<button onclick="resumeSchedule()">
+  Resume Schedule
+</button>
+
+
+  <button onclick="start()">Generate Schedule (Start Over)</button>
 </div>
 
 <!-- ===== ROUND VIEW ===== -->
@@ -95,6 +100,11 @@ button {
 let players = [];
 let matchType = "doubles";
 let courts = 1;
+
+let sessionActive = false;
+let nextMatches = null;
+let resumeTimerSeconds = null;
+
 
 let playCount = {};
 let sitoutStreak = {};
@@ -321,6 +331,9 @@ function start() {
   timerSeconds = parseInt(timerMinutesInput.value)*60;
 
   currentMatches = generateRound();
+nextMatches = generateRound();
+sessionActive = true;
+
   render();
 
   menuView.style.display = "none";
@@ -328,14 +341,45 @@ function start() {
 }
 
 function nextRound() {
-  stopTimer();
-  timerSeconds = parseInt(timerMinutesInput.value)*60;
-  currentMatches = generateRound();
+  
+stopTimer();
+  timerSeconds = parseInt(timerMinutesInput.value, 10) * 60;
+
+  currentMatches = nextMatches;
+  nextMatches = generateRound();
+
   render();
 }
 
+function resumeSchedule() {
+  if (!sessionActive || !currentMatches) {
+    alert("No active schedule to resume.");
+    return;
+  }
+
+  menuView.style.display = "none";
+  roundView.style.display = "block";
+
+  // Restore timer if it was running
+  if (resumeTimerSeconds !== null) {
+    timerSeconds = resumeTimerSeconds;
+    updateTimer();
+  }
+
+  render();
+}
+
+
+
+
 function goToMenu() {
-  stopTimer();
+  if (timerInterval) {
+    resumeTimerSeconds = timerSeconds;
+    stopTimer();
+  } else {
+    resumeTimerSeconds = null;
+  }
+
   roundView.style.display = "none";
   menuView.style.display = "block";
 }
