@@ -12,11 +12,15 @@ body {
   background: #f4f4f4;
 }
 h1, h2, h3 { text-align: center; }
-label { display:block; margin-top:12px; font-weight:600; }
-input, textarea, button {
+label {
+  display:block;
+  margin-top:12px;
+  font-weight:600;
+}
+textarea, input, button {
   font-size:18px;
-  width:100%;
   padding:10px;
+  width:100%;
   margin-top:6px;
 }
 button {
@@ -27,57 +31,82 @@ button {
   margin-top:14px;
 }
 .secondary { background:#666; }
-.timer { font-size:64px; font-weight:800; text-align:center; }
-.matchup { margin:22px 0; text-align:center; }
+.timer {
+  font-size:64px;
+  font-weight:800;
+  text-align:center;
+  margin:20px 0;
+}
+.matchup {
+  margin:22px 0;
+  text-align:center;
+}
 .court-label { font-weight:700; }
 .team { font-size:22px; font-weight:600; }
-.vs { opacity:.6; margin:6px; }
+.vs { opacity:0.6; margin:6px; }
 </style>
 </head>
 
 <body>
 
+<!-- ===== MENU ===== -->
 <div id="menuView">
-<h1>Court Scheduler</h1>
+  <h1>Court Scheduler</h1>
 
-<label>Number of Players</label>
-<input id="numPlayersInput" type="number">
-<button class="secondary" onclick="createPlayersFromNumber()">Create Players</button>
+  <label>Number of Players</label>
+  <input id="numPlayersInput" type="number" min="1">
+  <button class="secondary" onclick="createPlayersFromNumber()">Create Players</button>
 
-<label>Players</label>
-<textarea id="playersInput"></textarea>
+  <label>Players</label>
+  <textarea id="playersInput"></textarea>
 
-<label>Match Type</label>
-<label><input type="radio" name="matchType" value="doubles" checked> Doubles</label>
-<label><input type="radio" name="matchType" value="singles"> Singles</label>
+  <input id="playerActionInput" placeholder="Type player number/name">
+  <button onclick="addPlayer()">Add Player</button>
+  <button class="secondary" onclick="removePlayer()">Delete Player</button>
 
-<label>Courts</label>
-<input id="courtsInput" type="number" value="1">
+  <label>Match Type</label>
+  <label><input type="radio" name="matchType" value="doubles" checked> Doubles</label>
+  <label><input type="radio" name="matchType" value="singles"> Singles</label>
 
-<button onclick="start()">Generate Schedule</button>
+  <label>Courts</label>
+  <input id="courtsInput" type="number" min="1" value="1">
+
+  <label>Match Length (minutes)</label>
+  <input id="timerMinutesInput" type="number" min="1" value="8">
+
+  <button onclick="start()">Generate Schedule</button>
 </div>
 
+<!-- ===== ROUND VIEW ===== -->
 <div id="roundView" style="display:none;">
-<h2>Current Round</h2>
-<div id="currentRound"></div>
-<button onclick="nextRound()">Next Round</button>
-<button class="secondary" onclick="goToMenu()">Menu</button>
+  <h2>Current Round</h2>
+  <div id="roundMatches"></div>
+
+  <div id="timerDisplay" class="timer">00:00</div>
+
+  <button onclick="startTimer()">Start Timer</button>
+  <button onclick="pauseTimer()">Pause</button>
+  <button onclick="nextRound()">Next Round</button>
+  <button class="secondary" onclick="goToMenu()">Menu</button>
 </div>
 
 <script>
-// ====================== STATE ======================
+// ================= STATE =================
 let players = [];
-let courts = 1;
 let matchType = "doubles";
+let courts = 1;
 
 let playCount = {};
 let sitoutStreak = {};
-let partnerCount = {};
 let hasSatOut = {};
+let partnerCount = {};
 
-let currentRound = null;
+let currentMatches = [];
 
-// ====================== HELPERS ======================
+let timerSeconds = 0;
+let timerInterval = null;
+
+// ================= HELPERS =================
 function playersPerCourt() {
   return matchType === "singles" ? 2 : 4;
 }
@@ -90,20 +119,47 @@ function formatTeam(t) {
   return t.join(" & ");
 }
 
-// ====================== PLAYER CREATION ======================
+// ================= PLAYER MANAGEMENT =================
 function createPlayersFromNumber() {
   const n = parseInt(numPlayersInput.value);
   if (!n || n < 1) return;
-  playersInput.value =
-    Array.from({ length:n },(_,i)=>i+1).join(", ");
+  playersInput.value = Array.from({length:n},(_,i)=>i+1).join(", ");
 }
 
-// ====================== SITOUT SELECTION ======================
+function addPlayer() {
+  const name = playerActionInput.value.trim();
+  if (!name) return;
+
+  let list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  if (list.includes(name)) return alert("Player already exists.");
+
+  list.push(name);
+  playersInput.value = list.join(", ");
+  playerActionInput.value = "";
+}
+
+function removePlayer() {
+  const name = playerActionInput.value.trim();
+  if (!name) return;
+
+  let list = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  if (!list.includes(name)) return alert("Player not found.");
+
+  list = list.filter(p=>p!==name);
+  playersInput.value = list.join(", ");
+
+  delete playCount[name];
+  delete sitoutStreak[name];
+  delete hasSatOut[name];
+  delete partnerCount[name];
+}
+
+// ================= SCHEDULING =================
 function selectSitouts(players, slots) {
   const sitCount = players.length - slots;
   if (sitCount <= 0) return [];
 
-  const neverSat = players.filter(p => !hasSatOut[p]);
+  const neverSat = players.filter(p=>!hasSatOut[p]);
   const pool = neverSat.length >= sitCount ? neverSat : players;
 
   return pool
@@ -111,15 +167,14 @@ function selectSitouts(players, slots) {
     .slice(0, sitCount);
 }
 
-// ====================== ROUND GENERATION ======================
 function generateRound() {
   const slots = courts * playersPerCourt();
 
   players.forEach(p=>{
     playCount[p] ??= 0;
     sitoutStreak[p] ??= 0;
-    partnerCount[p] ??= {};
     hasSatOut[p] ??= false;
+    partnerCount[p] ??= {};
   });
 
   const sitouts = selectSitouts(players, slots);
@@ -135,82 +190,96 @@ function generateRound() {
 
   const playing = players.filter(p=>!sitouts.includes(p));
 
-  // ---------- SINGLES ----------
+  const matches = [];
+
   if (matchType === "singles") {
-    const matches = [];
     const pool = [...playing].sort(()=>Math.random()-0.5);
-    while(pool.length>=2) {
+    while (pool.length >= 2) {
       const a = pool.shift();
       const b = pool.shift();
       playCount[a]++; playCount[b]++;
-      matches.push({ teamA:[a], teamB:[b] });
+      matches.push({teamA:[a], teamB:[b]});
     }
     return matches;
   }
 
-  // ---------- DOUBLES ----------
-  const matches = [];
   let pool = [...playing];
-
-  while(pool.length>=4) {
-    let best=null, bestScore=Infinity;
-
-    for(let i=0;i<pool.length;i++)
-    for(let j=i+1;j<pool.length;j++)
-    for(let k=0;k<pool.length;k++)
-    for(let l=k+1;l<pool.length;l++) {
-      if(new Set([i,j,k,l]).size<4) continue;
-      const [a,b,c,d]=[pool[i],pool[j],pool[k],pool[l]];
-      const ps = (partnerCount[a][b]||0)+(partnerCount[c][d]||0);
-      const min = Math.min(playCount[a],playCount[b],playCount[c],playCount[d]);
-      const bs = (playCount[a]+playCount[b]+playCount[c]+playCount[d]-4*min);
-      const score = ps*10 + bs;
-      if(score<bestScore) {
-        bestScore=score;
-        best=[a,b,c,d];
-      }
-    }
-
-    const [a,b,c,d]=best;
-    matches.push({ teamA:[a,b], teamB:[c,d] });
-    partnerCount[a][b]=(partnerCount[a][b]||0)+1;
-    partnerCount[b][a]=partnerCount[a][b];
-    partnerCount[c][d]=(partnerCount[c][d]||0)+1;
-    partnerCount[d][c]=partnerCount[c][d];
+  while (pool.length >= 4) {
+    const [a,b,c,d] = pool.splice(0,4);
     playCount[a]++; playCount[b]++; playCount[c]++; playCount[d]++;
-    pool = pool.filter(p=>![a,b,c,d].includes(p));
+    matches.push({teamA:[a,b], teamB:[c,d]});
   }
   return matches;
 }
 
-// ====================== FLOW ======================
+// ================= FLOW =================
 function start() {
-  players = playersInput.value.split(",").map(p=>p.trim());
+  players = playersInput.value.split(",").map(p=>p.trim()).filter(Boolean);
+  if (players.length < playersPerCourt()) {
+    alert("Not enough players.");
+    return;
+  }
+
   matchType = document.querySelector("input[name='matchType']:checked").value;
   courts = calculateCourts(players.length, parseInt(courtsInput.value));
 
-  playCount={}; sitoutStreak={}; partnerCount={}; hasSatOut={};
-  players.forEach(p=>{ playCount[p]=0; sitoutStreak[p]=0; partnerCount[p]={}; hasSatOut[p]=false; });
+  playCount = {}; sitoutStreak = {}; hasSatOut = {}; partnerCount = {};
 
-  currentRound = generateRound();
+  timerSeconds = parseInt(timerMinutesInput.value)*60;
+
+  currentMatches = generateRound();
   render();
-  menuView.style.display="none";
-  roundView.style.display="block";
+
+  menuView.style.display = "none";
+  roundView.style.display = "block";
 }
 
 function nextRound() {
-  currentRound = generateRound();
+  stopTimer();
+  timerSeconds = parseInt(timerMinutesInput.value)*60;
+  currentMatches = generateRound();
   render();
 }
 
 function goToMenu() {
-  menuView.style.display="block";
-  roundView.style.display="none";
+  stopTimer();
+  roundView.style.display = "none";
+  menuView.style.display = "block";
 }
 
-// ====================== RENDER ======================
+// ================= TIMER =================
+function startTimer() {
+  if (timerInterval) return;
+  timerInterval = setInterval(()=>{
+    if (timerSeconds <= 0) {
+      stopTimer();
+      alert("Time!");
+      return;
+    }
+    timerSeconds--;
+    updateTimer();
+  },1000);
+}
+
+function pauseTimer() {
+  stopTimer();
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function updateTimer() {
+  const m = String(Math.floor(timerSeconds/60)).padStart(2,"0");
+  const s = String(timerSeconds%60).padStart(2,"0");
+  timerDisplay.textContent = `${m}:${s}`;
+}
+
+// ================= RENDER =================
 function render() {
-  currentRound.innerHTML = currentRound.map((m,i)=>`
+  updateTimer();
+  roundMatches.innerHTML = currentMatches.map((m,i)=>`
     <div class="matchup">
       <div class="court-label">Court ${i+1}</div>
       <div class="team">${formatTeam(m.teamA)}</div>
