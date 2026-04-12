@@ -195,17 +195,20 @@ function selectSitouts(players, slots) {
 
 function generateRound() {
   const slots = courts * playersPerCourt();
+  let matches = []; // ✅ DECLARED ONCE
 
-  players.forEach(p=>{
+  // Ensure state exists
+  players.forEach(p => {
     playCount[p] ??= 0;
     sitoutStreak[p] ??= 0;
     hasSatOut[p] ??= false;
     partnerCount[p] ??= {};
   });
 
+  // Select sit-outs
   const sitouts = selectSitouts(players, slots);
 
-  players.forEach(p=>{
+  players.forEach(p => {
     if (sitouts.includes(p)) {
       sitoutStreak[p]++;
       hasSatOut[p] = true;
@@ -214,91 +217,93 @@ function generateRound() {
     }
   });
 
-  const playing = players.filter(p=>!sitouts.includes(p));
+  const playing = players.filter(p => !sitouts.includes(p));
 
-  const matches = [];
-
+  /* ===================== SINGLES ===================== */
   if (matchType === "singles") {
-    const pool = [...playing].sort(()=>Math.random()-0.5);
+    let pool = [...playing].sort(() => Math.random() - 0.5);
+
     while (pool.length >= 2) {
       const a = pool.shift();
       const b = pool.shift();
-      playCount[a]++; playCount[b]++;
-      matches.push({teamA:[a], teamB:[b]});
+
+      matches.push({
+        teamA: [a],
+        teamB: [b]
+      });
+
+      playCount[a]++;
+      playCount[b]++;
     }
-    return matches;
+
+    return { matches };
   }
 
- 
-// ---------- DOUBLES (FAIR + RANDOMIZED) ----------
-let matches = [];
-let pool = [...playing].sort(() => Math.random() - 0.5);
+  /* ===================== DOUBLES ===================== */
+  let pool = [...playing].sort(() => Math.random() - 0.5);
 
-while (pool.length >= 4) {
-  let bestCombo = null;
-  let bestScore = Infinity;
+  while (pool.length >= 4) {
+    let bestCombo = null;
+    let bestScore = Infinity;
 
-  for (let i = 0; i < pool.length; i++) {
-    for (let j = i + 1; j < pool.length; j++) {
-      for (let k = 0; k < pool.length; k++) {
-        for (let l = k + 1; l < pool.length; l++) {
+    for (let i = 0; i < pool.length; i++) {
+      for (let j = i + 1; j < pool.length; j++) {
+        for (let k = 0; k < pool.length; k++) {
+          for (let l = k + 1; l < pool.length; l++) {
 
-          if (new Set([i,j,k,l]).size < 4) continue;
+            if (new Set([i, j, k, l]).size < 4) continue;
 
-          const a = pool[i], b = pool[j];
-          const c = pool[k], d = pool[l];
+            const a = pool[i], b = pool[j];
+            const c = pool[k], d = pool[l];
 
-          // Partner repeat penalty
-          const partnerPenalty =
-            (partnerCount[a][b] || 0) +
-            (partnerCount[c][d] || 0);
+            const partnerPenalty =
+              (partnerCount[a][b] || 0) +
+              (partnerCount[c][d] || 0);
 
-          // Balance penalty
-          const minCount = Math.min(
-            playCount[a], playCount[b],
-            playCount[c], playCount[d]
-          );
+            const min = Math.min(
+              playCount[a], playCount[b],
+              playCount[c], playCount[d]
+            );
 
-          const balancePenalty =
-            (playCount[a] - minCount) +
-            (playCount[b] - minCount) +
-            (playCount[c] - minCount) +
-            (playCount[d] - minCount);
+            const balancePenalty =
+              (playCount[a] - min) +
+              (playCount[b] - min) +
+              (playCount[c] - min) +
+              (playCount[d] - min);
 
-          const score = partnerPenalty * 10 + balancePenalty;
+            const score = partnerPenalty * 10 + balancePenalty;
 
-          if (score < bestScore) {
-            bestScore = score;
-            bestCombo = [a, b, c, d];
+            if (score < bestScore) {
+              bestScore = score;
+              bestCombo = [a, b, c, d];
+            }
           }
         }
       }
     }
+
+    const [a, b, c, d] = bestCombo;
+
+    matches.push({
+      teamA: [a, b],
+      teamB: [c, d]
+    });
+
+    partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+    partnerCount[b][a] = partnerCount[a][b];
+    partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
+    partnerCount[d][c] = partnerCount[c][d];
+
+    playCount[a]++;
+    playCount[b]++;
+    playCount[c]++;
+    playCount[d]++;
+
+    pool = pool.filter(p => ![a, b, c, d].includes(p));
   }
 
-  const [a, b, c, d] = bestCombo;
-
-  matches.push({
-    teamA: [a, b],
-    teamB: [c, d]
-  });
-
-  // Update state
-  partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
-  partnerCount[b][a] = partnerCount[a][b];
-  partnerCount[c][d] = (partnerCount[c][d] || 0) + 1;
-  partnerCount[d][c] = partnerCount[c][d];
-
-  playCount[a]++;
-  playCount[b]++;
-  playCount[c]++;
-  playCount[d]++;
-
-  pool = pool.filter(p => ![a, b, c, d].includes(p));
+  return { matches };
 }
-
-return matches;
-
 
 // ================= FLOW =================
 function start() {
