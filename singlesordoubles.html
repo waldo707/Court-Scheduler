@@ -450,11 +450,20 @@ function startTimer() {
   render();
 
   timerInterval = setInterval(() => {
-    if (timerSeconds <= 0) {
-      stopTimer();
-      alert("Time!");
-      return;
-    }
+   
+if (timerSeconds <= 0) {
+  stopTimer();
+
+  const alarm = document.getElementById("alarmSound");
+  if (alarm) {
+    alarm.currentTime = 0;
+    alarm.play().catch(() => { /* browser blocked autoplay */ });
+  }
+
+  alert("Time!");
+  return;
+}
+
     timerSeconds--;
     updateTimer();
   }, 1000);
@@ -505,5 +514,10 @@ function render() {
   `).join("");
 }
 </script>
+
+<audio id="alarmSound" preload="auto">
+  <source src="alarm.mp3" type="audio/mpeg">
+</audio>
+
 </body>
 </html>
