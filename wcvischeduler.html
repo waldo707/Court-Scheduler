@@ -367,14 +367,17 @@ function selectSitouts(players, slots) {
   const sitCount = players.length - slots;
   if (sitCount <= 0) return [];
 
-  const neverSat = players.filter(p=>!hasSatOut[p]);
+  const neverSat = players.filter(p => !hasSatOut[p]);
   const pool = neverSat.length >= sitCount ? neverSat : players;
 
-  return pool
-    .sort((a,b)=>playCount[b]-playCount[a])
+  return [...pool]
+    .sort(() => Math.random() - 0.5)
+    .sort((a, b) => {
+      const diff = playCount[b] - playCount[a];
+      return diff !== 0 ? diff : Math.random() - 0.5;
+    })
     .slice(0, sitCount);
 }
-
 function generateRound() {
   courts = calculateCourts(players.length, maxCourts);
   if (courts === 0) return [];
@@ -540,7 +543,7 @@ function start() {
   timerSeconds = parseInt(timerMinutesInput.value)*60;
 
   currentMatches = generateRound();
-  nextMatches = null;   // ✅ not generated yet
+nextMatches = generateRound();
   sessionActive = true;
 
   render();
@@ -550,11 +553,19 @@ function start() {
 }
 
 function nextRound() {
+ function nextRound() {
   stopTimer();
-  timerSeconds = parseInt(timerMinutesInput.value, 10) * 60;
+
+  timerSeconds =
+      parseInt(timerMinutesInput.value, 10) * 60;
+
+  if (!nextMatches) {
+  return;
+}
 
   currentMatches = nextMatches;
-  nextMatches = null;
+
+  nextMatches = generateRound();
 
   render();
 }
@@ -671,9 +682,7 @@ function playAlarmBeep() {
 function render() {
   updateTimer();
 
-  // ✅ Ensure next round exists for display
-  if (!nextMatches) {
-    nextMatches = generateRound();
+ 
   }
 
   currentRoundMatches.innerHTML = currentMatches.map((m, i) => `
